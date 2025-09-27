@@ -2,7 +2,7 @@
 
 Parsing [todo.txt](http://todotxt.org/) text files for visualization and interaction, to suit my workflow. Syncing via iCloud.
 
-## Version history
+## Version planning
 
 ### v1.0.0
 
