@@ -6,7 +6,7 @@ Parsing [todo.txt](http://todotxt.org/) text files for visualization and interac
 
 ### v1.0.0
 
-- [ ] todo.txt parser
+- [x] todo.txt parser
 - [ ] File management, fetch and update
 - [ ] Edit text, projects and tags, toggle completion
 - [ ] Edit notes and url
@@ -29,9 +29,9 @@ Parsing [todo.txt](http://todotxt.org/) text files for visualization and interac
 ## Example file 
 
 ```
-###
-### Heading (Area of Interest)
-###
+#
+# Heading (Area of Interest)
+#
 
 A simple todo
 x A completed todo
