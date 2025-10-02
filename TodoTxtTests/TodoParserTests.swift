@@ -141,7 +141,7 @@ struct TodoParserTests {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let expectedDate = dateFormatter.date(from: "2025-01-01")
-        #expect(result?.due == expectedDate)
+        #expect(result?.dueDate == expectedDate)
     }
 
     @Test("Parse todo with reccuring")

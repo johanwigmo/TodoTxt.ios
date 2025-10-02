@@ -41,7 +41,7 @@ class TodoParser: LineParser {
             priority: priority,
             project: project,
             tags: tags,
-            due: due,
+            dueDate: due,
             reccuring: reccuring,
             url: url,
             note: note
