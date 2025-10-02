@@ -28,6 +28,8 @@ class TodoParser: LineParser {
 
         let project = extractProject(&workingCopy)
         let tags = extractTags(&workingCopy)
+        let due = extractDue(&workingCopy)
+        let reccuring = extractReccuring(&workingCopy)
         let url = extractUrl(&workingCopy)
         let note = extractNote(&workingCopy)
         let title = workingCopy.trimmingCharacters(in: .whitespaces)
@@ -39,6 +41,8 @@ class TodoParser: LineParser {
             priority: priority,
             project: project,
             tags: tags,
+            due: due,
+            reccuring: reccuring,
             url: url,
             note: note
         )
@@ -78,16 +82,7 @@ private extension TodoParser {
 
     func extractProject(_ text: inout String) -> String? {
         let pattern = /(?:^|\s)\+([A-Za-z0-9-]+)/
-
-        guard let match = text.firstMatch(of: pattern) else { return nil }
-        let project = String(match.1)
-        text.removeSubrange(match.range)
-
-        while let match = text.firstMatch(of: pattern) {
-            text.removeSubrange(match.range)
-        }
-
-        return project
+        return extractSingleData(&text, pattern: pattern)
     }
 
     func extractTags(_ text: inout String) -> [String] {
@@ -102,31 +97,44 @@ private extension TodoParser {
         return tags
     }
 
+    func extractDue(_ text: inout String) -> Date? {
+        let pattern = /(?:^|\s)due:(\d{4}-\d{2}-\d{2})/
+
+        guard let match = text.firstMatch(of: pattern) else { return nil }
+        let dateString = String(match.1)
+
+        guard let date = dateFormatter.date(from: dateString) else { return nil }
+        text.removeSubrange(match.range)
+        return date
+    }
+
+    func extractReccuring(_ text: inout String) -> String? {
+        let pattern = /(?:^|\s)repeat:([^\s]+)/
+        return extractSingleData(&text, pattern: pattern)
+    }
+
     func extractUrl(_ text: inout String) -> String? {
         let pattern = /(?:^|\s)url:([^\s]+)/
-
-        var url: String?
-        while let match = text.firstMatch(of: pattern) {
-            if url == nil {
-                url = String(match.1)
-            }
-            text.removeSubrange(match.range)
-        }
-
-        return url
+        return extractSingleData(&text, pattern: pattern)
     }
 
     func extractNote(_ text: inout String) -> String? {
         let pattern = /(?:^|\s)note:"([^"]+)"/
+        return extractSingleData(&text, pattern: pattern)
+    }
+}
 
-        var note: String?
+private extension TodoParser {
+
+    func extractSingleData(_ text: inout String, pattern: Regex<(Substring, Substring)>) -> String? {
+        guard let match = text.firstMatch(of: pattern) else { return nil }
+        let found = String(match.1)
+        text.removeSubrange(match.range)
+
         while let match = text.firstMatch(of: pattern) {
-            if note == nil {
-                note = String(match.1)
-            }
             text.removeSubrange(match.range)
         }
 
-        return note
+        return found
     }
 }
