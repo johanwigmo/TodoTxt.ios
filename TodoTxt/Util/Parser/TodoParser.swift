@@ -18,6 +18,7 @@ class TodoParser: LineParser {
 
     func parse(line: String) -> Item? {
         guard !line.isEmpty else { return nil }
+        guard !line.hasPrefix(" ") else { return nil }
         guard !line.hasPrefix("#") else { return nil }
 
         var workingCopy = String(line.drop(while: { $0.isWhitespace }))
@@ -41,7 +42,7 @@ class TodoParser: LineParser {
             priority: priority,
             project: project,
             tags: tags,
-            due: due,
+            dueDate: due,
             reccuring: reccuring,
             url: url,
             note: note

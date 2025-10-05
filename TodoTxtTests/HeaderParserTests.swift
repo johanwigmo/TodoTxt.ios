@@ -20,7 +20,7 @@ struct HeaderParserTests {
         #expect(result?.title == "Header")
     }
 
-    @Test("Parse incorect header", arguments: ["## Header", "# ", "#"])
+    @Test("Parse incorect header", arguments: ["## Header", "# ", "#", " # Test comment"])
     func parseIncorrectHeader(input: String) {
         let result = sut.parse(line: input)
         #expect(result == nil)

@@ -24,7 +24,7 @@ struct Todo: Item {
     let priority: TodoPriority?
     let project: String?
     let tags: [String]
-    let due: Date?
+    let dueDate: Date?
     let reccuring: String? // Cannot use keyword `repeat`
     let url: String?
     let note: String?
@@ -36,8 +36,8 @@ struct Todo: Item {
         priority: TodoPriority? = nil,
         project: String? = nil,
         tags: [String] = [],
-        due: Date?,
-        reccuring: String?,
+        dueDate: Date? = nil,
+        reccuring: String? = nil,
         url: String? = nil,
         note: String? = nil
     ) {
@@ -47,7 +47,7 @@ struct Todo: Item {
         self.priority = priority
         self.project = project
         self.tags = tags
-        self.due = due
+        self.dueDate = dueDate
         self.reccuring = reccuring
         self.url = url
         self.note = note

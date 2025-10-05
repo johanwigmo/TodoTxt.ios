@@ -29,9 +29,17 @@ struct TodoParserTests {
         #expect(result == nil)
     }
 
+    @Test("Parse leading whitespace")
+    func parseLeadingWhitespace() {
+        let input = " Not a todo"
+        let result = sut.parse(line: input)
+
+        #expect(result == nil)
+    }
+
     @Test("Parse simple todo")
     func parseSimpleTodo() {
-        let input = " A simple todo"
+        let input = "A simple todo"
         let result = sut.parse(line: input) as? Todo
 
         #expect(result?.title == "A simple todo")
@@ -141,7 +149,7 @@ struct TodoParserTests {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let expectedDate = dateFormatter.date(from: "2025-01-01")
-        #expect(result?.due == expectedDate)
+        #expect(result?.dueDate == expectedDate)
     }
 
     @Test("Parse todo with reccuring")
