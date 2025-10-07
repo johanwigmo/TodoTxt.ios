@@ -11,6 +11,7 @@ enum RepositoryError: Error, Equatable {
     case invalidLineNumber
 }
 
+@Observable
 class TodoRepository {
 
     private(set) var lines: [FileLine] = []
