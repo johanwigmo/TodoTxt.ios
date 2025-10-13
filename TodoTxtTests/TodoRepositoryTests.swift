@@ -47,8 +47,8 @@ struct TodoRepositoryTests {
 
     @Test("Update item at line number")
     func updateItemAtLineNumber() throws {
-        let mockfileManager = MockFileManager()
-        let repository = TodoRepository(fileManager: mockfileManager)
+        let mockFileManager = MockFileManager()
+        let repository = TodoRepository(fileManager: mockFileManager)
 
         try repository.loadFile(from: URL(fileURLWithPath: "/test.txt"))
 
@@ -61,8 +61,8 @@ struct TodoRepositoryTests {
 
     @Test("Update item with invalid line number throws error")
     func updateItemWithInvalidLineNumberThrowsError() throws {
-        let mockfileManager = MockFileManager()
-        let repository = TodoRepository(fileManager: mockfileManager)
+        let mockFileManager = MockFileManager()
+        let repository = TodoRepository(fileManager: mockFileManager)
 
         try repository.loadFile(from: URL(fileURLWithPath: "/test.txt"))
 
@@ -75,8 +75,8 @@ struct TodoRepositoryTests {
 
     @Test("Remove item renumbers lines")
     func removeItemRenumbersLines() throws {
-        let mockfileManager = MockFileManager()
-        let repository = TodoRepository(fileManager: mockfileManager)
+        let mockFileManager = MockFileManager()
+        let repository = TodoRepository(fileManager: mockFileManager)
 
         try repository.loadFile(from: URL(fileURLWithPath: "/test.txt"))
         try repository.removeItem(at: 0)
@@ -88,8 +88,8 @@ struct TodoRepositoryTests {
 
     @Test("Remove item with invalid line number throws error")
     func removeItemWithInvalidLineNumberThrowsError() throws {
-        let mockfileManager = MockFileManager()
-        let repository = TodoRepository(fileManager: mockfileManager)
+        let mockFileManager = MockFileManager()
+        let repository = TodoRepository(fileManager: mockFileManager)
         
         try repository.loadFile(from: URL(fileURLWithPath: "/test.txt"))
         
@@ -100,8 +100,8 @@ struct TodoRepositoryTests {
 
     @Test("Add item at end")
     func addItemAtEnd() throws {
-        let mockfileManager = MockFileManager()
-        let repository = TodoRepository(fileManager: mockfileManager)
+        let mockFileManager = MockFileManager()
+        let repository = TodoRepository(fileManager: mockFileManager)
         
         try repository.loadFile(from: URL(fileURLWithPath: "/test.txt"))
 
@@ -115,8 +115,8 @@ struct TodoRepositoryTests {
 
     @Test("Add item at specific position")
     func addItemAtSpecificPosition() throws {
-        let mockfileManager = MockFileManager()
-        let repository = TodoRepository(fileManager: mockfileManager)
+        let mockFileManager = MockFileManager()
+        let repository = TodoRepository(fileManager: mockFileManager)
 
         try repository.loadFile(from: URL(fileURLWithPath: "/test.txt"))
 
@@ -128,8 +128,8 @@ struct TodoRepositoryTests {
 
     @Test("Add item renumbers subsequent lines")
     func addItemRenumbersSubsequentLines() throws {
-        let mockfileManager = MockFileManager()
-        let repository = TodoRepository(fileManager: mockfileManager)
+        let mockFileManager = MockFileManager()
+        let repository = TodoRepository(fileManager: mockFileManager)
         
         try repository.loadFile(from: URL(fileURLWithPath: "/test.txt"))
         
@@ -150,6 +150,61 @@ struct TodoRepositoryTests {
 
         let items = repository.items
         #expect(items.count == 2)
+    }
+
+    @Test("Move item updates line numbers")
+    func moveItemUpdatesLineNumbers() throws {
+        let mockFileManager = MockFileManager()
+        let repository = TodoRepository(fileManager: mockFileManager)
+
+        try repository.loadFile(from: URL(fileURLWithPath: "/test.txt"))
+
+        try repository.moveItem(from: 0, to: 2)
+
+        #expect(repository.lines[0].item is Todo)
+        #expect(repository.lines[1].item == nil)
+        #expect(repository.lines[2].item is Header)
+
+        for (index, line) in repository.lines.enumerated() {
+            #expect(line.lineNumber == index)
+        }
+    }
+
+    @Test("Move item from end to beginning")
+    func moveItemFromEndToBeginning() throws {
+        let mockFileManager = MockFileManager()
+        let repository = TodoRepository(fileManager: mockFileManager)
+        
+        try repository.loadFile(from: URL(fileURLWithPath: "/test.txt"))
+
+        try repository.moveItem(from: 2, to: 0)
+
+        #expect(repository.lines[0].item == nil)
+        #expect(repository.lines[2].item is Todo)
+    }
+
+    @Test("Move item with invalid source throws error")
+    func moveItemWithInvalidSourceThrowsError() throws {
+        let mockFileManager = MockFileManager()
+        let repository = TodoRepository(fileManager: mockFileManager)
+
+        try repository.loadFile(from: URL(fileURLWithPath: "/test.txt"))
+
+        #expect(throws: RepositoryError.invalidLineNumber){
+            try repository.moveItem(from: 10, to: 0)
+        }
+    }
+
+    @Test("Move item with invalid destination throws error")
+    func moveItemWithInvalidDestinationThrowsError() throws {
+        let mockFileManager = MockFileManager()
+        let repository = TodoRepository(fileManager: mockFileManager)
+
+        try repository.loadFile(from: URL(fileURLWithPath: "/test.txt"))
+
+        #expect(throws: RepositoryError.invalidLineNumber){
+            try repository.moveItem(from: 0, to: 10)
+        }
     }
 }
 

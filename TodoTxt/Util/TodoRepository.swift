@@ -48,11 +48,22 @@ class TodoRepository {
         }
 
         lines.remove(at: lineNumber)
-
-        lines = lines.enumerated().map { index, line in
-            FileLine(lineNumber: index, rawContent: line.rawContent, item: line.item)
-        }
+        renumberLines()
     }
+
+    func moveItem(from source: Int, to destination: Int) throws {
+        guard source >= 0 && source < lines.count else {
+            throw RepositoryError.invalidLineNumber
+        }
+        guard destination >= 0 && destination <= lines.count else {
+            throw RepositoryError.invalidLineNumber
+        }
+
+        let item = lines.remove(at: source)
+        lines.insert(item, at: destination)
+        renumberLines()
+    }
+
 
     func addItem(_ item: any Item, at lineNumber: Int? = nil) {
         let newLineNumber = lineNumber ?? lines.count
@@ -60,12 +71,18 @@ class TodoRepository {
 
         if let lineNumber, lineNumber < lines.count {
             lines.insert(newLine, at: lineNumber)
-
-            lines = lines.enumerated().map { index, line in
-                FileLine(lineNumber: index, rawContent: line.rawContent, item: line.item)
-            }
+            renumberLines()
         } else {
             lines.append(newLine)
+        }
+    }
+}
+
+private extension TodoRepository {
+
+    func renumberLines() {
+        lines = lines.enumerated().map { index, line in
+            FileLine(lineNumber: index, rawContent: line.rawContent, item: line.item)
         }
     }
 }
