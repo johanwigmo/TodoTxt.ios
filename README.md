@@ -8,9 +8,10 @@ Parsing [todo.txt](http://todotxt.org/) text files for visualization and interac
 
 - [x] todo.txt parser
 - [x] File management, fetch and update
-- [ ] Edit text, projects and tags, toggle completion
-- [ ] Edit notes and url
-- [ ] Edit priority
+- [x] Edit text, projects and tags, toggle completion
+- [x] Edit notes and url
+- [x] Edit priority
+- [ ] Search
 - [ ] iCloud sync
 - [ ] Backup file content
 
