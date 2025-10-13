@@ -12,6 +12,7 @@ struct TodoTxtApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .theme(CatppuccinTheme())
         }
     }
 }
