@@ -1,0 +1,40 @@
+//
+//  DesignTokens.swift
+//  TodoTxt
+//
+//  Created by Johan Wigmo on 2025-10-14.
+//
+
+import SwiftUI
+
+enum Spacing {
+    static let xxs: CGFloat = 4
+    static let xs: CGFloat = 8
+    static let s: CGFloat = 12
+    static let m: CGFloat = 16
+    static let l: CGFloat = 24
+    static let xl: CGFloat = 32
+    static let xxl: CGFloat = 48
+
+    enum Semantic {
+        static let itemSpacing: CGFloat = Spacing.s
+        static let sectionSpacin: CGFloat = Spacing.l
+        static let contentPadding: CGFloat = Spacing.m
+        static let elementGap: CGFloat = Spacing.xs
+        static let rowInternalSpacing: CGFloat = 14
+    }
+}
+
+enum IconSize {
+    static let s: CGFloat = 16
+    static let m: CGFloat = 24
+    static let l: CGFloat = 28
+    static let xl: CGFloat = 64
+}
+
+extension View {
+
+    func contentPadding() -> some View {
+        self.padding(Spacing.Semantic.contentPadding)
+    }
+}

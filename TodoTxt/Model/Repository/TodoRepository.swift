@@ -14,8 +14,8 @@ enum RepositoryError: Error, Equatable {
 @Observable
 class TodoRepository {
 
-    private(set) var lines: [FileLine] = []
-    private(set) var currentFileUrl: URL?
+    var lines: [FileLine] = []
+    var currentFileUrl: URL?
     private let fileManager: FileManagerProtocol
 
     var items: [any Item] {

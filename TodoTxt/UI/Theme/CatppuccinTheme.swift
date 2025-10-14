@@ -8,14 +8,25 @@
 import SwiftUI
 
 struct CatppuccinTheme: Theme {
-    var priority: Color { Color("Catppuccin/Red")}
-    var project: Color { Color("Catppuccin/Blue")}
-    var tag: Color { Color("Catppuccin/Yellow")}
-    var completed: Color { Color("Catppuccin/Green")}
-    var url: Color { Color("Catppuccin/Mauve")}
-    var todoBackground: Color { Color("Catppuccin/Surface0")}
-    var elevatedBackground: Color { Color("Catppuccin/Surface1")}
-    var subtleBorder: Color { Color("Catppuccin/Overlay0")}
-    var accentBorder: Color { Color("Catppuccin/Overlay1")}
-    var shadowColor: Color { Color("Catppuccin/Crust")}
+
+    var primaryBackground: Color { Color("Catppuccin/Base") }
+
+    var priority: Color { Color("Catppuccin/Red") }
+    var project: Color { Color("Catppuccin/Blue") }
+    var tag: Color { Color("Catppuccin/Yellow") }
+    var completed: Color { Color("Catppuccin/Green") }
+    var url: Color { Color("Catppuccin/Mauve") }
+
+    var todoBackground: Color { Color("Catppuccin/Surface0") }
+    var elevatedBackground: Color { Color("Catppuccin/Surface1") }
+    var subtleBorder: Color { Color("Catppuccin/Overlay0") }
+    var accentBorder: Color { Color("Catppuccin/Overlay1") }
+    var shadowColor: Color { Color("Catppuccin/Crust") }
+
+    var primaryText: Color { Color("Catppuccin/Text") }
+    var secondaryText: Color { Color("Catppuccin/Subtext0") }
+    var heading: Color { Color("Catppuccin/Blue") }
+
+    var accentColor: Color { Color("Catppuccin/Blue") }
+    var buttonBackground: Color { Color("Surface1") }
 }

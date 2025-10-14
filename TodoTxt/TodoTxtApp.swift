@@ -11,7 +11,7 @@ import SwiftUI
 struct TodoTxtApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            TodoListScreen()
                 .theme(CatppuccinTheme())
         }
     }
