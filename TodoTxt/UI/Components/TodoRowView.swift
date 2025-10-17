@@ -73,35 +73,33 @@ struct TodoRowView: View {
 
     @ViewBuilder
     private func projectAndTags() -> some View {
-        if todo.project != nil || todo.tags.isEmpty {
-            FlowLayout(spacing: Spacing.Semantic.elementGap) {
-                if let project = todo.project {
-                    Text("+\(project)")
-                        .font(.system(.subheadline, design: .monospaced))
-                        .foregroundStyle(theme.project)
-                } else {
-                    Button {
-                        // TODO: Add project
-                    } label: {
-                        Text(L10n.addProject)
-                            .font(.system(.subheadline, design: .monospaced))
-                            .foregroundStyle(theme.secondaryText)
-                    }
-                }
-
-                ForEach(todo.tags, id: \.self) { tag in
-                    Text("@\(tag)")
-                        .font(.system(.subheadline, design: .monospaced))
-                        .foregroundStyle(theme.tag)
-                }
-
+        FlowLayout(spacing: Spacing.Semantic.elementGap) {
+            if let project = todo.project {
+                Text("+\(project)")
+                    .font(.system(.subheadline, design: .monospaced))
+                    .foregroundStyle(theme.project)
+            } else {
                 Button {
-                    // TODO: Add tag
+                    // TODO: Add project
                 } label: {
-                    Text(L10n.addTag)
+                    Text(L10n.addProject)
                         .font(.system(.subheadline, design: .monospaced))
                         .foregroundStyle(theme.secondaryText)
                 }
+            }
+
+            ForEach(todo.tags, id: \.self) { tag in
+                Text("@\(tag)")
+                    .font(.system(.subheadline, design: .monospaced))
+                    .foregroundStyle(theme.tag)
+            }
+
+            Button {
+                // TODO: Add tag
+            } label: {
+                Text(L10n.addTag)
+                    .font(.system(.subheadline, design: .monospaced))
+                    .foregroundStyle(theme.secondaryText)
             }
         }
     }
@@ -191,75 +189,18 @@ struct TodoRowView: View {
     }
 }
 
-#Preview("Basic Todo") {
-    ScrollView {
-        TodoRowView(
-            todo: Todo(title: "Buy groceries"),
-            isExpanded: false,
-            onTap: {}
-        )
-        .previewBackground()
+#Preview("Collapsed") {
+    List(SampleDataLoader.sampleTodos) { todo in
+        TodoRowView(todo: todo, isExpanded: false, onTap: {})
     }
-}
-
-#Preview("With Priority and Tags") {
-    ScrollView {
-        TodoRowView(
-            todo: Todo(
-                title: "Review Q4 budget proposal and make some notes",
-                priority: .A,
-                project: "Work",
-                tags: ["urgent", "finance"]
-            ),
-            isExpanded: false,
-            onTap: {}
-        )
-        .previewBackground()
-    }
-}
-
-#Preview("Expanded without Note and URL") {
-    TodoRowView(
-        todo: Todo(
-            title: "Review Q4 budget proposal",
-            priority: .A,
-            project: "Work",
-            tags: ["urgent", "finance"],
-        ),
-        isExpanded: true,
-        onTap: {}
-    )
     .previewBackground()
+    .listStyle(.plain)
 }
 
-#Preview("Expanded with Note and URL") {
-    TodoRowView(
-        todo: Todo(
-            title: "Review Q4 budget proposal",
-            priority: .A,
-            project: "Work",
-            tags: ["urgent", "finance"],
-            url: "https://budget.example.com/q4-review",
-            note: "Need to check the marketing allocation before the meeting with Sarah on Friday"
-        ),
-        isExpanded: true,
-        onTap: {}
-    )
-    .previewBackground()
-}
-
-#Preview("Completed") {
-    ScrollView {
-        TodoRowView(
-            todo: Todo(
-                title: "Send client proposal",
-                isCompleted: true,
-                project: "Freelance",
-                tags: ["client"]
-            ),
-            isExpanded: false,
-            onTap: {}
-        )
-        .previewBackground()
+#Preview("Expanded") {
+    List(SampleDataLoader.sampleTodos) { todo in
+        TodoRowView(todo: todo, isExpanded: true, onTap: {})
     }
+    .previewBackground()
+    .listStyle(.plain)
 }

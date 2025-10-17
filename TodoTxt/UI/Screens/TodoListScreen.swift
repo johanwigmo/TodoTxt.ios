@@ -77,47 +77,12 @@ struct TodoListScreen: View {
     TodoListScreen()
 }
 
-#Preview("Todo List") {
-    let repo = TodoRepository()
+#Preview("Todos - Light") {
+    TodoListScreen(repository: SampleDataLoader.createSampleRepository())
+        .preferredColorScheme(.light)
+}
 
-    let todos = [
-        FileLine(lineNumber: 0, item: Header(title: "Work")),
-        FileLine(lineNumber: 1, item: Todo(
-            title: "Review Q4 budget proposal",
-            priority: .A,
-            project: "Work",
-            tags: ["urgent", "finance"],
-            url: "https://budget.example.com/q4-review",
-            note: "Need to check the marketing allocation before the meeting with Sarah on Friday"
-        )),
-        FileLine(lineNumber: 2, item: Todo(
-            title: "Read design docs",
-            project: "Work",
-            url: "https://docs.company.com/new-feature-spec"
-        )),
-        FileLine(lineNumber: 3, item: Header(title: "Personal")),
-        FileLine(lineNumber: 4, item: Todo(
-            title: "Buy groceries for the week including all the essentials",
-            priority: .B,
-            project: "Personal",
-            tags: ["shopping"],
-            note: "Don't forget: milk, eggs, bread, coffee beans, and bananas"
-        )),
-        FileLine(lineNumber: 5, item: Todo(
-            title: "Water the plants",
-            project: "Home"
-        )),
-        FileLine(lineNumber: 6, item: Todo(
-            title: "Send client proposal",
-            isCompleted: true,
-            completionDate: Date(),
-            project: "Freelance",
-            tags: ["client"]
-        ))
-    ]
-
-    repo.lines = todos
-    repo.currentFileUrl = URL(fileURLWithPath: "/mock/todo.txt")
-
-    return TodoListScreen(repository: repo)
+#Preview("Todos - Dark") {
+    TodoListScreen(repository: SampleDataLoader.createSampleRepository())
+        .preferredColorScheme(.dark)
 }
