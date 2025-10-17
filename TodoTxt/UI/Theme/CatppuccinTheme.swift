@@ -28,5 +28,6 @@ struct CatppuccinTheme: Theme {
     var heading: Color { Color("Catppuccin/Blue") }
 
     var accentColor: Color { Color("Catppuccin/Blue") }
-    var buttonBackground: Color { Color("Surface1") }
+    var buttonBackground: Color { Color("Catppuccin/Surface1") }
+    var buttonText: Color { Color("Catppuccin/Base") }
 }

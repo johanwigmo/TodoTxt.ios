@@ -21,7 +21,7 @@ enum Spacing {
         static let sectionSpacin: CGFloat = Spacing.l
         static let contentPadding: CGFloat = Spacing.m
         static let elementGap: CGFloat = Spacing.xs
-        static let rowInternalSpacing: CGFloat = 14
+        static let rowInternalSpacing: CGFloat = Spacing.xs
     }
 }
 
@@ -30,6 +30,22 @@ enum IconSize {
     static let m: CGFloat = 24
     static let l: CGFloat = 28
     static let xl: CGFloat = 64
+}
+
+enum CornerRadius {
+    static let s: CGFloat = 6
+    static let m: CGFloat = 12
+}
+
+enum BorderWidth {
+    static let thin: CGFloat = 1
+    static let medium: CGFloat = 2
+    static let thick: CGFloat = 3
+}
+
+enum Layout {
+    static let toolbarHeight: CGFloat = 60
+    static let bottomContentPadding: CGFloat = 80
 }
 
 extension View {

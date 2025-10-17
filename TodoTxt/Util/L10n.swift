@@ -16,4 +16,10 @@ enum L10n {
 
     // MARK: Actions
     static let loadFile = String(localized: "Load File")
+    static let newTodo = String(localized: "New Todo")
+    static let addProject = String(localized: "+Project")
+    static let addTag = String(localized: "@Tag")
+    static let addNote = String(localized: "Note")
+    static let addUrl = String(localized: "URL")
+    static let openUrl = String(localized: "Open")
 }

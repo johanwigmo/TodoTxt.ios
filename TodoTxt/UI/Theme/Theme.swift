@@ -32,6 +32,7 @@ protocol Theme {
     // Interactive
     var accentColor: Color { get }
     var buttonBackground: Color { get }
+    var buttonText: Color { get }
 }
 
 private struct ThemeKey: EnvironmentKey {

@@ -14,7 +14,7 @@ struct EmptyStateView: View {
 
     var body: some View {
         VStack(spacing: Spacing.l) {
-            Image(systemName: "doc.text")
+            Image(systemName: "text.document")
                 .font(.system(size: IconSize.xl))
                 .foregroundStyle(theme.secondaryText)
 
@@ -25,7 +25,6 @@ struct EmptyStateView: View {
 
             Text(L10n.emptyStateDescription)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
                 .foregroundStyle(theme.secondaryText)
 
             Button {
@@ -33,6 +32,7 @@ struct EmptyStateView: View {
             } label: {
                 Label(L10n.loadFile, systemImage: "folder")
                     .font(.headline)
+                    .foregroundStyle(theme.buttonText)
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -45,14 +45,7 @@ struct EmptyStateView: View {
     }
 }
 
-#Preview("Light Mode") {
+#Preview {
     EmptyStateView(onLoadFile: {})
         .previewBackground()
-        .preferredColorScheme(.light)
-}
-
-#Preview("Dark Mode") {
-    EmptyStateView(onLoadFile: {})
-        .previewBackground()
-        .preferredColorScheme(.dark)
 }
