@@ -11,6 +11,8 @@ struct TodoRowView: View {
 
     let todo: Todo
     let isExpanded: Bool
+    let allProjects: [String]
+    let allTags: [String]
     let onTap: () -> Void
     let onUpdate: (Todo) -> Void
 
@@ -20,12 +22,13 @@ struct TodoRowView: View {
     @State private var isEditingTitle: Bool = false
     @FocusState private var titleFieldFocused: Bool
 
-    @State private var isEditingProject = false
+    @State private var editedProject: String = ""
+    @FocusState private var isEditingProject: Bool
+
     @State private var isEditingTag = false
     @State private var isEditingUrl = false
     @State private var isEditingNote = false
 
-    @State private var editedProject: String = ""
     @State private var editedTag: String = ""
     @State private var editedUrl: String = ""
     @State private var editedNote: String = ""
@@ -63,6 +66,9 @@ struct TodoRowView: View {
         }
         .onAppear() {
             editedTitle = todo.title
+            if let project = todo.project {
+                editedProject = "+\(project)"
+            }
             editedUrl = todo.url ?? ""
             editedNote = todo.note ?? ""
         }
@@ -71,12 +77,19 @@ struct TodoRowView: View {
                 cancelTitleEdit()
             }
         }
+        .onChange(of: isEditingProject) { oldValue, newValue in
+            if oldValue && !newValue {
+                cancelProjectEdit()
+            }
+        }
     }
+}
 
-    // MARK: Checkbox
+// MARK: Checkbox
 
-    @ViewBuilder
-    private func checkbox() -> some View {
+private extension TodoRowView {
+
+    func checkbox() -> some View {
         Button {
             var updated = todo
             updated.isCompleted.toggle()
@@ -91,11 +104,14 @@ struct TodoRowView: View {
         }
         .buttonStyle(.plain)
     }
+}
 
-    // MARK: Title
+// MARK: Title
+
+private extension TodoRowView {
 
     @ViewBuilder
-    private func titleSection() -> some View {
+    func titleSection() -> some View {
         if isEditingTitle {
             TextField(L10n.placeholderTitle, text: $editedTitle, axis: .vertical)
                 .font(.system(.body, design: .monospaced))
@@ -121,7 +137,7 @@ struct TodoRowView: View {
         }
     }
 
-    private var styledTitle: AttributedString {
+    var styledTitle: AttributedString {
         var result = AttributedString()
 
         if let priority = todo.priority {
@@ -144,7 +160,7 @@ struct TodoRowView: View {
         return result
     }
 
-    private func saveTitleEdit() {
+    func saveTitleEdit() {
         var newPriority: TodoPriority? = nil
         var newTitle = editedTitle.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -159,17 +175,107 @@ struct TodoRowView: View {
         onUpdate(updated)
     }
 
-    private func cancelTitleEdit() {
+    func cancelTitleEdit() {
         isEditingTitle = false
         editedTitle = todo.title
     }
+}
 
-    // MARK: Project & Tags
+// MARK: Project & Tags
 
-    @ViewBuilder
-    private func projectAndTagsSection() -> some View {
+private extension TodoRowView {
 
+    func projectAndTagsSection() -> some View {
+        FlowLayout(spacing: Spacing.Semantic.elementGap) {
+            projectView()
+            // TODO: Tags
+        }
     }
+
+    func projectView() -> some View {
+        ZStack(alignment: .leading) {
+            TextField(L10n.addProject, text: $editedProject)
+                .font(.system(.subheadline, design: .monospaced))
+                .foregroundStyle(theme.project)
+                .textFieldStyle(.plain)
+                .onSubmit {
+                    if isEditingProject, let firstMatch = filteredProjects.first, !editedProject.isEmpty {
+                        let searchTerm = editedProject
+                            .replacingOccurrences(of: "+", with: "")
+                            .trimmingCharacters(in: .whitespaces)
+
+                        // Only use suggestion if it matches the prefix
+                        if firstMatch.lowercased().hasPrefix(searchTerm.lowercased()) {
+                            editedProject = firstMatch
+                        }
+                    }
+
+                    saveProject()
+                    isEditingTitle = false
+                }
+                .focused($isEditingProject)
+                .autocorrectionDisabled()
+
+            if isEditingProject,
+               let firstMatch = filteredProjects.first,
+               !editedProject.isEmpty {
+                let searchTerm = editedProject
+                    .replacingOccurrences(of: "+", with: "")
+                    .trimmingCharacters(in: .whitespaces)
+
+                if firstMatch.lowercased().hasPrefix(searchTerm.lowercased()) {
+                    HStack(spacing: 0) {
+                        Text(editedProject)
+                            .font(.system(.subheadline, design: .monospaced))
+                            .foregroundStyle(.clear) // Hiden to align with TextField
+                        Text(firstMatch.dropFirst(searchTerm.count))
+                            .font(.system(.subheadline, design: .monospaced))
+                            .foregroundStyle(theme.project.opacity(0.4))
+                    }
+                    .allowsHitTesting(false)
+                }
+            }
+        }
+    }
+
+    func saveProject() {
+        var newProject: String?
+        if !editedProject.isEmpty {
+            newProject = editedProject
+                .replacingOccurrences(of: "+", with: "")
+                .replacingOccurrences(of: " ", with: "")
+        } else {
+            newProject = nil
+        }
+
+        var updated = todo
+        updated.project = newProject
+        onUpdate(updated)
+    }
+
+    func cancelProjectEdit() {
+        isEditingProject = false
+        if let project = todo.project {
+            editedProject = "+\(project)"
+        } else {
+            editedProject = ""
+        }
+    }
+
+    var filteredProjects: [String] {
+        let searchTerm = editedProject
+            .replacingOccurrences(of: "+", with: "")
+            .trimmingCharacters(in: .whitespaces)
+
+        if searchTerm.isEmpty {
+            return Array(allProjects.prefix(5))
+        }
+
+        return allProjects.filter { $0.localizedCaseInsensitiveContains(searchTerm) }
+    }
+}
+
+private extension TodoRowView {
 
     @ViewBuilder
     private func urlSection() -> some View {
@@ -191,6 +297,8 @@ struct TodoRowView: View {
     TodoRowView(
         todo: Todo(title: "Buy groceries", priority: .B),
         isExpanded: false,
+        allProjects: [],
+        allTags: [],
         onTap: {},
         onUpdate: { _ in }
     )
@@ -209,6 +317,8 @@ struct TodoRowView: View {
             note: "Check with Joe first"
         ),
         isExpanded: true,
+        allProjects: [],
+        allTags: [],
         onTap: {},
         onUpdate:  { _ in }
     )

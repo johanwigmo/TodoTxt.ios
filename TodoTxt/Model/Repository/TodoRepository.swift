@@ -18,10 +18,6 @@ class TodoRepository {
     var currentFileUrl: URL?
     private let fileManager: FileManagerProtocol
 
-    var items: [any Item] {
-        lines.compactMap { $0.item }
-    }
-
     init(fileManager: FileManagerProtocol = TodoFileManager()) {
         self.fileManager = fileManager
     }
@@ -85,5 +81,28 @@ private extension TodoRepository {
         lines = lines.enumerated().map { index, line in
             FileLine(lineNumber: index, rawContent: line.rawContent, item: line.item)
         }
+    }
+}
+
+extension TodoRepository {
+
+    var items: [any Item] {
+        lines.compactMap { $0.item }
+    }
+
+    var allProjects: [String] {
+        let projects = items.compactMap { item -> String? in
+            guard let todo = item as? Todo else { return nil }
+            return todo.project
+        }
+        return Array(Set(projects)).sorted()
+    }
+
+    var allTags: [String] {
+        let tags = items.compactMap { item -> [String]? in
+            guard let todo = item as? Todo else { return nil }
+            return todo.tags
+        }.flatMap { $0 }
+        return Array(Set(tags)).sorted()
     }
 }

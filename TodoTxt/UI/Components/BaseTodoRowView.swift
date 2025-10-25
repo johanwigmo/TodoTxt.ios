@@ -33,7 +33,6 @@ struct BaseTodoRowView: View {
         .onTapGesture(perform: onTap)
     }
 
-    @ViewBuilder
     private func checkbox() -> some View {
         Button {
 
@@ -71,7 +70,6 @@ struct BaseTodoRowView: View {
         Text(priority + title)
     }
 
-    @ViewBuilder
     private func projectAndTags() -> some View {
         FlowLayout(spacing: Spacing.Semantic.elementGap) {
             if let project = todo.project {

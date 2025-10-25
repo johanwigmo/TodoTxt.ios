@@ -28,7 +28,6 @@ struct TodoListScreen: View {
         }
     }
 
-    @ViewBuilder
     private var emptyState: some View {
         EmptyStateView(onLoadFile: {
             showingFilePicker = true
@@ -37,7 +36,6 @@ struct TodoListScreen: View {
         .background(theme.primaryBackground)
     }
 
-    @ViewBuilder
     private var loadedState: some View {
         NavigationStack {
             List(repository.items, id: \.id) { item in
@@ -51,6 +49,8 @@ struct TodoListScreen: View {
                     TodoRowView(
                         todo: todo,
                         isExpanded: expandedItemID == todo.id,
+                        allProjects: repository.allProjects,
+                        allTags: repository.allTags,
                         onTap: {
                             expandedItemID = expandedItemID == todo.id ? nil : todo.id
                         },
