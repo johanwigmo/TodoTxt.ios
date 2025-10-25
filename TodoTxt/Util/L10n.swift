@@ -22,4 +22,7 @@ enum L10n {
     static let addNote = String(localized: "Note")
     static let addUrl = String(localized: "URL")
     static let openUrl = String(localized: "Open")
+
+    // Mark: Placeholders
+    static let placeholderTitle = String(localized: "Title")
 }

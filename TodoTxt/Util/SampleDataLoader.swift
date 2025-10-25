@@ -58,6 +58,8 @@ enum SampleDataLoader {
             )),
             FileLine(lineNumber: 9, item: Todo(
                 title: "Plan weekend trip",
+                isCompleted: true,
+                completionDate: Date(),
                 priority: .C,
                 project: "Personal",
                 tags: ["travel"],

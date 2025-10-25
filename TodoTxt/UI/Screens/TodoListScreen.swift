@@ -43,13 +43,22 @@ struct TodoListScreen: View {
             List(repository.items, id: \.id) { item in
                 if let header = item as? Header {
                     HeaderRowView(header: header)
+                        .id(header.id)
                         .listRowInsets(.vertical, Spacing.Semantic.rowInternalSpacing)
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
                 } else if let todo = item as? Todo {
-                    TodoRowView(todo: todo, isExpanded: expandedItemID == todo.id) {
-                        expandedItemID = expandedItemID == todo.id ? nil : todo.id
-                    }
+                    TodoRowView(
+                        todo: todo,
+                        isExpanded: expandedItemID == todo.id,
+                        onTap: {
+                            expandedItemID = expandedItemID == todo.id ? nil : todo.id
+                        },
+                        onUpdate: { updated in
+                            // TODO: Error handling
+                            try? repository.updateItem(id: todo.id, with: updated)
+                        })
+                    .id(todo.id)
                     .listRowInsets(.vertical, Spacing.Semantic.rowInternalSpacing)
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)

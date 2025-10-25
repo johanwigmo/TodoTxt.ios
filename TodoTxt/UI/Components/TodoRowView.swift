@@ -2,7 +2,7 @@
 //  TodoRowView.swift
 //  TodoTxt
 //
-//  Created by Johan Wigmo on 2025-10-15.
+//  Created by Johan Wigmo on 2025-10-17.
 //
 
 import SwiftUI
@@ -12,31 +12,76 @@ struct TodoRowView: View {
     let todo: Todo
     let isExpanded: Bool
     let onTap: () -> Void
+    let onUpdate: (Todo) -> Void
+
     @Environment(\.theme) private var theme
+
+    @State private var editedTitle: String = ""
+    @State private var isEditingTitle: Bool = false
+    @FocusState private var titleFieldFocused: Bool
+
+    @State private var isEditingProject = false
+    @State private var isEditingTag = false
+    @State private var isEditingUrl = false
+    @State private var isEditingNote = false
+
+    @State private var editedProject: String = ""
+    @State private var editedTag: String = ""
+    @State private var editedUrl: String = ""
+    @State private var editedNote: String = ""
+
+    private var isEditing: Bool {
+        isEditingTitle || isEditingProject || isEditingTag || isEditingUrl || isEditingNote
+    }
 
     var body: some View {
         VStack(alignment: .leading) {
-            HStack(alignment: .top, spacing: Spacing.Semantic.rowInternalSpacing){
+            HStack(alignment: .top, spacing: Spacing.Semantic.rowInternalSpacing) {
                 checkbox()
+
                 VStack(alignment: .leading) {
-                    priorityAndTitle()
-                    projectAndTags()
-                    url()
-                        .padding(.top, Spacing.Semantic.itemSpacing)
-                    note()
-                        .padding(.top, Spacing.Semantic.rowInternalSpacing)
-                    metaButtons()
-                        .padding(.top, Spacing.Semantic.rowInternalSpacing)
+                    titleSection()
+                    projectAndTagsSection()
+
+                    if isExpanded {
+                        urlSection()
+                            .padding(.top, Spacing.Semantic.itemSpacing)
+                        noteSection()
+                            .padding(.top, Spacing.Semantic.rowInternalSpacing)
+                        actionButtonSection()
+                            .padding(.top, Spacing.Semantic.rowInternalSpacing)
+                    }
                 }
             }
         }
-        .onTapGesture(perform: onTap)
+        .background(isExpanded ? Color.red : Color.clear) // TODO: This is temporary
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if !isEditing {
+                onTap()
+            }
+        }
+        .onAppear() {
+            editedTitle = todo.title
+            editedUrl = todo.url ?? ""
+            editedNote = todo.note ?? ""
+        }
+        .onChange(of: titleFieldFocused) { oldValue, newValue in
+            if oldValue && !newValue && isEditingTitle {
+                cancelTitleEdit()
+            }
+        }
     }
+
+    // MARK: Checkbox
 
     @ViewBuilder
     private func checkbox() -> some View {
         Button {
-
+            var updated = todo
+            updated.isCompleted.toggle()
+            updated.completionDate = updated.isCompleted ? Date() : nil
+            onUpdate(updated)
         } label: {
             Image(systemName: todo.isCompleted ? "checkmark.square.fill" : "square")
                 .font(.title2)
@@ -47,160 +92,126 @@ struct TodoRowView: View {
         .buttonStyle(.plain)
     }
 
-    @ViewBuilder
-    private func priorityAndTitle() -> some View {
-        var priority: AttributedString {
-            if let priority = todo.priority {
-                var text = AttributedString("(\(priority.rawValue)) ")
-                text.font = .system(.body, design: .monospaced).bold()
-                text.foregroundColor = theme.priority
-                return text
-            } else {
-                return ""
-            }
-        }
-
-        var title: AttributedString {
-            var text = AttributedString(todo.title)
-            text.font = .system(.body, design: .monospaced)
-            text.foregroundColor = todo.isCompleted ? theme.secondaryText : theme.primaryText
-            text.strikethroughStyle = todo.isCompleted ? .single : .none
-            return text
-        }
-
-        Text(priority + title)
-    }
+    // MARK: Title
 
     @ViewBuilder
-    private func projectAndTags() -> some View {
-        FlowLayout(spacing: Spacing.Semantic.elementGap) {
-            if let project = todo.project {
-                Text("+\(project)")
-                    .font(.system(.subheadline, design: .monospaced))
-                    .foregroundStyle(theme.project)
-            } else {
-                Button {
-                    // TODO: Add project
-                } label: {
-                    Text(L10n.addProject)
-                        .font(.system(.subheadline, design: .monospaced))
-                        .foregroundStyle(theme.secondaryText)
+    private func titleSection() -> some View {
+        if isEditingTitle {
+            TextField(L10n.placeholderTitle, text: $editedTitle, axis: .vertical)
+                .font(.system(.body, design: .monospaced))
+                .textFieldStyle(.plain)
+                .foregroundStyle(todo.isCompleted ? theme.secondaryText : theme.primaryText)
+                .lineLimit(1...)
+                .onSubmit {
+                    saveTitleEdit()
+                    isEditingTitle = false
                 }
-            }
-
-            ForEach(todo.tags, id: \.self) { tag in
-                Text("@\(tag)")
-                    .font(.system(.subheadline, design: .monospaced))
-                    .foregroundStyle(theme.tag)
-            }
-
-            Button {
-                // TODO: Add tag
-            } label: {
-                Text(L10n.addTag)
-                    .font(.system(.subheadline, design: .monospaced))
-                    .foregroundStyle(theme.secondaryText)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func url() -> some View {
-        if let url = todo.url, isExpanded {
-            HStack(spacing: Spacing.Semantic.elementGap) {
-                Text(url)
-                    .font(.system(.subheadline, design: .monospaced))
-                    .foregroundStyle(theme.url)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-
-                Spacer()
-
-                Button {
-                    // TODO: Open url
-                } label: {
-                    Text(L10n.openUrl)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundStyle(theme.buttonText)
+                .focused($titleFieldFocused)
+                .onAppear {
+                    titleFieldFocused = true
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(theme.url)
-                .controlSize(.small)
-            }
-            .padding(Spacing.Semantic.contentPadding)
-            .background(theme.elevatedBackground)
-            .containerShape(.rect(cornerRadius: CornerRadius.s))
-            .overlay(
-                RoundedRectangle(cornerRadius: CornerRadius.s)
-                    .stroke(theme.subtleBorder.opacity(0.3), lineWidth: BorderWidth.thin)
-            )
-            .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    @ViewBuilder
-    private func note() -> some View {
-        if let note = todo.note, isExpanded {
-            Text(note)
-                .font(.system(.subheadline, design: .monospaced))
-                .italic()
-                .foregroundStyle(theme.secondaryText)
-                .padding(Spacing.Semantic.contentPadding)
+        } else {
+            Text(styledTitle)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(theme.todoBackground)
-                .clipShape(RoundedRectangle(cornerRadius: CornerRadius.s))
-                .overlay(
-                    RoundedRectangle(cornerRadius: CornerRadius.s)
-                        .stroke(theme.accentBorder.opacity(0.3), lineWidth: BorderWidth.thin)
-                )
+                .onTapGesture {
+                    let priority = todo.priority.map { "(\($0.rawValue)) "} ?? ""
+                    editedTitle = "\(priority)\(todo.title)"
+                    isEditingTitle = true
+                }
         }
     }
 
-    @ViewBuilder
-    private func metaButtons() -> some View {
-        if isExpanded && !todo.isCompleted {
-            HStack(spacing: Spacing.Semantic.itemSpacing) {
-                if todo.url == nil {
-                    Button {
-                        // TODO: Add URL
-                    } label: {
-                        Label(L10n.addUrl, systemImage: "plus")
-                            .font(.subheadline)
-                            .foregroundStyle(theme.accentColor)
-                            .padding(.horizontal, Spacing.Semantic.elementGap)
-                    }
-                    .buttonStyle(DashedButtonStyle())
-                }
+    private var styledTitle: AttributedString {
+        var result = AttributedString()
 
-                if todo.note == nil {
-                    Button {
-                        // TODO: Add Note
-                    } label: {
-                        Label(L10n.addNote, systemImage: "plus")
-                            .font(.subheadline)
-                            .foregroundStyle(theme.accentColor)
-                            .padding(.horizontal, Spacing.Semantic.elementGap)
-                    }
-                    .buttonStyle(DashedButtonStyle())
-                }
-            }
+        if let priority = todo.priority {
+            var text = AttributedString("(\(priority.rawValue)) ")
+            text.font = .system(.body, design: .monospaced).bold()
+            text.foregroundColor = theme.priority
+            result.append(text)
         }
+
+        var text = AttributedString(todo.title)
+        text.font = .system(.body, design: .monospaced)
+        text.foregroundColor = todo.isCompleted ? theme.secondaryText : theme.primaryText
+
+        if todo.isCompleted {
+            text.strikethroughStyle = .single
+        }
+
+        result.append(text)
+
+        return result
+    }
+
+    private func saveTitleEdit() {
+        var newPriority: TodoPriority? = nil
+        var newTitle = editedTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let match = newTitle.firstMatch(of: Pattern.priorityAndTitle) {
+            newPriority = TodoPriority(rawValue: String(match.1))
+            newTitle = String(match.2)
+        }
+
+        var updated = todo
+        updated.title = newTitle
+        updated.priority = newPriority
+        onUpdate(updated)
+    }
+
+    private func cancelTitleEdit() {
+        isEditingTitle = false
+        editedTitle = todo.title
+    }
+
+    // MARK: Project & Tags
+
+    @ViewBuilder
+    private func projectAndTagsSection() -> some View {
+
+    }
+
+    @ViewBuilder
+    private func urlSection() -> some View {
+
+    }
+
+    @ViewBuilder
+    private func noteSection() -> some View {
+
+    }
+
+    @ViewBuilder
+    private func actionButtonSection() -> some View {
+
     }
 }
 
-#Preview("Collapsed") {
-    List(SampleDataLoader.sampleTodos) { todo in
-        TodoRowView(todo: todo, isExpanded: false, onTap: {})
-    }
+#Preview("Basic") {
+    TodoRowView(
+        todo: Todo(title: "Buy groceries", priority: .B),
+        isExpanded: false,
+        onTap: {},
+        onUpdate: { _ in }
+    )
+    .padding()
     .previewBackground()
-    .listStyle(.plain)
 }
 
 #Preview("Expanded") {
-    List(SampleDataLoader.sampleTodos) { todo in
-        TodoRowView(todo: todo, isExpanded: true, onTap: {})
-    }
+    TodoRowView(
+        todo: Todo(
+            title: "Review budget, and send proposal to everyone",
+            priority: .A,
+            project: "Work",
+            tags: ["urgent", "finance"],
+            url: "https://example.com",
+            note: "Check with Joe first"
+        ),
+        isExpanded: true,
+        onTap: {},
+        onUpdate:  { _ in }
+    )
+    .padding()
     .previewBackground()
-    .listStyle(.plain)
 }

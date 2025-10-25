@@ -15,4 +15,6 @@ enum Pattern {
     static let reccuring = /(?:^|\s)repeat:([^\s]+)/
     static let url = /(?:^|\s)url:([^\s]+)/
     static let note = /(?:^|\s)note:"([^"]+)"/
+
+    static let priorityAndTitle = /^\(([A-Z])\)\s+(.+)$/
 }

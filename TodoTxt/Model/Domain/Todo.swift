@@ -18,16 +18,16 @@ enum TodoPriority: String, CaseIterable, Comparable {
 struct Todo: Item {
 
     let id = UUID()
-    let title: String
-    let isCompleted: Bool
-    let completionDate: Date?
-    let priority: TodoPriority?
-    let project: String?
-    let tags: [String]
-    let dueDate: Date?
-    let reccuring: String? // Cannot use keyword `repeat`
-    let url: String?
-    let note: String?
+    var title: String
+    var isCompleted: Bool
+    var completionDate: Date?
+    var priority: TodoPriority?
+    var project: String?
+    var tags: [String]
+    var dueDate: Date?
+    var reccuring: String? // Cannot use keyword `repeat`
+    var url: String?
+    var note: String?
 
     init(
         title: String,
