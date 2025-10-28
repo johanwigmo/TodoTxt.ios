@@ -149,16 +149,7 @@ struct TodoParserTests {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let expectedDate = dateFormatter.date(from: "2025-01-01")
-        #expect(result?.dueDate == expectedDate)
-    }
-
-    @Test("Parse todo with reccuring")
-    func parseTodoWithReccuring() {
-        let input = "A repeating todo repeat:11d"
-        let result = sut.parse(line: input) as? Todo
-
-        #expect(result?.title == "A repeating todo")
-        #expect(result?.reccuring == "11d")
+        #expect(result?.due == expectedDate)
     }
 
     @Test("Parse todo with url")

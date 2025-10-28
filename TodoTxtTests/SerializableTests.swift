@@ -77,19 +77,12 @@ struct SerializableTests {
     @Test("Serialize todo with due date")
     func serializeTodoWithDueDate() {
         let date = dateFormatter.date(from: "2025-01-01")!
-        let todo = Todo(title: "Test todo", dueDate: date)
+        let todo = Todo(title: "Test todo", due: date)
         let serialized = todo.serialize()
         
         #expect(serialized == "Test todo due:2025-01-01")
     }
 
-    @Test("Serialize todo with reccuring")
-    func serializeTodoWithReccuring() {
-        let todo = Todo(title: "Test todo", reccuring: "14d")
-        let serialized = todo.serialize()
-        
-        #expect(serialized == "Test todo repeat:14d")
-    }
 
     @Test("Serialize todo with url")
     func serializeTodoWithUrl() {
@@ -118,14 +111,13 @@ struct SerializableTests {
             priority: .B,
             project: "Project",
             tags: ["tag1", "tag2"],
-            dueDate: date,
-            reccuring: "7d",
+            due: date,
             url: "https://example.com",
             note: "This is a note"
         )
         let serialized = todo.serialize()
 
-        #expect(serialized == "x 2025-01-01 (B) Test todo +Project @tag1 @tag2 due:2025-01-01 repeat:7d url:https://example.com note:\"This is a note\"")
+        #expect(serialized == "x 2025-01-01 (B) Test todo +Project @tag1 @tag2 due:2025-01-01 url:https://example.com note:\"This is a note\"")
     }
 
     @Test("Serialize and parse")
@@ -139,8 +131,7 @@ struct SerializableTests {
             priority: .B,
             project: "Project",
             tags: ["tag1", "tag2"],
-            dueDate: date,
-            reccuring: "7d",
+            due: date,
             url: "https://example.com",
             note: "This is a note"
         )
@@ -159,10 +150,8 @@ struct SerializableTests {
         #expect(parsed.priority == original.priority)
         #expect(parsed.project == original.project)
         #expect(parsed.tags == original.tags)
-        #expect(parsed.dueDate == original.dueDate)
-        #expect(parsed.reccuring == original.reccuring)
+        #expect(parsed.due == original.due)
         #expect(parsed.url == original.url)
         #expect(parsed.note == original.note)
-
     }
 }

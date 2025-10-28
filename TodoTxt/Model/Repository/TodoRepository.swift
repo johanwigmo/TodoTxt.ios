@@ -8,18 +8,15 @@
 import Foundation
 
 enum RepositoryError: Error, Equatable {
-    case invalidLineNumber
+    case invalidId
 }
 
+@Observable
 class TodoRepository {
 
-    private(set) var lines: [FileLine] = []
-    private(set) var currentFileUrl: URL?
+    var lines: [FileLine] = []
+    var currentFileUrl: URL?
     private let fileManager: FileManagerProtocol
-
-    var items: [any Item] {
-        lines.compactMap { $0.item }
-    }
 
     init(fileManager: FileManagerProtocol = TodoFileManager()) {
         self.fileManager = fileManager
@@ -34,29 +31,29 @@ class TodoRepository {
         try fileManager.save(lines: lines)
     }
 
-    func updateItem(at lineNumber: Int, with item: any Item) throws {
-        guard lineNumber >= 0 && lineNumber < lines.count else {
-            throw RepositoryError.invalidLineNumber
+    func updateItem(id: UUID, with item: any Item) throws {
+        guard let index = lines.firstIndex(where: { $0.item?.id == id }) else {
+            throw RepositoryError.invalidId
         }
 
-        lines[lineNumber] = FileLine(lineNumber: lineNumber, item: item)
+        lines[index] = FileLine(lineNumber: index, item: item)
     }
 
-    func removeItem(at lineNumber: Int) throws {
-        guard lineNumber >= 0 && lineNumber < lines.count else {
-            throw RepositoryError.invalidLineNumber
+    func removeItem(id: UUID) throws {
+        guard let index = lines.firstIndex(where: { $0.item?.id == id }) else {
+            throw RepositoryError.invalidId
         }
 
-        lines.remove(at: lineNumber)
+        lines.remove(at: index)
         renumberLines()
     }
 
     func moveItem(from source: Int, to destination: Int) throws {
         guard source >= 0 && source < lines.count else {
-            throw RepositoryError.invalidLineNumber
+            throw RepositoryError.invalidId
         }
         guard destination >= 0 && destination <= lines.count else {
-            throw RepositoryError.invalidLineNumber
+            throw RepositoryError.invalidId
         }
 
         let item = lines.remove(at: source)
@@ -84,5 +81,28 @@ private extension TodoRepository {
         lines = lines.enumerated().map { index, line in
             FileLine(lineNumber: index, rawContent: line.rawContent, item: line.item)
         }
+    }
+}
+
+extension TodoRepository {
+
+    var items: [any Item] {
+        lines.compactMap { $0.item }
+    }
+
+    var allProjects: [String] {
+        let projects = items.compactMap { item -> String? in
+            guard let todo = item as? Todo else { return nil }
+            return todo.project
+        }
+        return Array(Set(projects)).sorted()
+    }
+
+    var allTags: [String] {
+        let tags = items.compactMap { item -> [String]? in
+            guard let todo = item as? Todo else { return nil }
+            return todo.tags
+        }.flatMap { $0 }
+        return Array(Set(tags)).sorted()
     }
 }

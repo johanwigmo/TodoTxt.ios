@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol Item: Identifiable {
+protocol Item: Identifiable where ID == UUID {
     var id: UUID { get }
     var title: String { get }
 }

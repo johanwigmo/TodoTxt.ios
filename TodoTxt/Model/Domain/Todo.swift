@@ -18,16 +18,15 @@ enum TodoPriority: String, CaseIterable, Comparable {
 struct Todo: Item {
 
     let id = UUID()
-    let title: String
-    let isCompleted: Bool
-    let completionDate: Date?
-    let priority: TodoPriority?
-    let project: String?
-    let tags: [String]
-    let dueDate: Date?
-    let reccuring: String? // Cannot use keyword `repeat`
-    let url: String?
-    let note: String?
+    var title: String
+    var isCompleted: Bool
+    var completionDate: Date?
+    var priority: TodoPriority?
+    var project: String?
+    var tags: [String]
+    var due: Date?
+    var url: String?
+    var note: String?
 
     init(
         title: String,
@@ -36,8 +35,7 @@ struct Todo: Item {
         priority: TodoPriority? = nil,
         project: String? = nil,
         tags: [String] = [],
-        dueDate: Date? = nil,
-        reccuring: String? = nil,
+        due: Date? = nil,
         url: String? = nil,
         note: String? = nil
     ) {
@@ -47,8 +45,7 @@ struct Todo: Item {
         self.priority = priority
         self.project = project
         self.tags = tags
-        self.dueDate = dueDate
-        self.reccuring = reccuring
+        self.due = due
         self.url = url
         self.note = note
     }

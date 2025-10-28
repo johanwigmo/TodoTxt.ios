@@ -7,18 +7,6 @@
 
 import Foundation
 
-protocol FileManagerProtocol {
-    func load(from url: URL) throws -> [FileLine]
-    func save(lines: [FileLine]) throws
-}
-
-enum FileManagerError: Error, Equatable {
-    case fileNotFound
-    case invalidEncoding
-    case noFileLoaded
-    case writeFailed
-}
-
 class TodoFileManager: FileManagerProtocol {
 
     private let lineParsers: [LineParser]

@@ -47,14 +47,10 @@ extension Todo: Serializable {
             components.append("@\(tag)")
         }
 
-        if let dueDate {
+        if let due {
             let formatter = DateFormatter()
             formatter.dateFormat = "yyyy-MM-dd"
-            components.append("due:\(formatter.string(from: dueDate))")
-        }
-
-        if let reccuring {
-            components.append("repeat:\(reccuring)")
+            components.append("due:\(formatter.string(from: due))")
         }
 
         if let url {

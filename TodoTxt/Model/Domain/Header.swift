@@ -9,5 +9,5 @@ import Foundation
 
 struct Header: Item {
     let id = UUID()
-    let title: String
+    var title: String
 }

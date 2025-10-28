@@ -45,22 +45,25 @@ struct TodoRepositoryTests {
         #expect(mockFileManager.savedLines?.count == 3)
     }
 
-    @Test("Update item at line number")
-    func updateItemAtLineNumber() throws {
+    @Test("Update item by ID")
+    func updateItemById() throws {
         let mockFileManager = MockFileManager()
         let repository = TodoRepository(fileManager: mockFileManager)
 
         try repository.loadFile(from: URL(fileURLWithPath: "/test.txt"))
 
-        let newTodo = Todo(title: "Updated todo", priority: .A)
-        try repository.updateItem(at: 1, with: newTodo)
+        let idToUpdate = repository.lines[1].item?.id ?? UUID()
 
-        #expect((repository.lines[1].item as? Todo)?.title == "Updated todo")
-        #expect((repository.lines[1].item as? Todo)?.priority == .A)
+        let newTodo = Todo(title: "Updated todo", priority: .A)
+        try repository.updateItem(id: idToUpdate, with: newTodo)
+
+        let updatedItem = repository.lines[1].item as? Todo
+        #expect(updatedItem?.title == "Updated todo")
+        #expect(updatedItem?.priority == .A)
     }
 
-    @Test("Update item with invalid line number throws error")
-    func updateItemWithInvalidLineNumberThrowsError() throws {
+    @Test("Update item with invalid ID throws error")
+    func updateItemWithInvalidIDThrowsError() throws {
         let mockFileManager = MockFileManager()
         let repository = TodoRepository(fileManager: mockFileManager)
 
@@ -68,8 +71,10 @@ struct TodoRepositoryTests {
 
         let newTodo = Todo(title: "Updated todo")
 
-        #expect(throws: RepositoryError.invalidLineNumber) {
-            try repository.updateItem(at: 10, with: newTodo)
+        let invalidID = UUID()
+
+        #expect(throws: RepositoryError.invalidId) {
+            try repository.updateItem(id: invalidID, with: newTodo)
         }
     }
 
@@ -79,7 +84,8 @@ struct TodoRepositoryTests {
         let repository = TodoRepository(fileManager: mockFileManager)
 
         try repository.loadFile(from: URL(fileURLWithPath: "/test.txt"))
-        try repository.removeItem(at: 0)
+        let item = repository.lines[0].item!
+        try repository.removeItem(id: item.id)
 
         for (index, line) in repository.lines.enumerated() {
             #expect(line.lineNumber == index)
@@ -87,14 +93,15 @@ struct TodoRepositoryTests {
     }
 
     @Test("Remove item with invalid line number throws error")
-    func removeItemWithInvalidLineNumberThrowsError() throws {
+    func removeItemWithinvalidIdThrowsError() throws {
         let mockFileManager = MockFileManager()
         let repository = TodoRepository(fileManager: mockFileManager)
         
         try repository.loadFile(from: URL(fileURLWithPath: "/test.txt"))
-        
-        #expect(throws: RepositoryError.invalidLineNumber) {
-            try repository.removeItem(at: 10)
+
+        let newTodo = Todo(title: "Invalid Todo")
+        #expect(throws: RepositoryError.invalidId) {
+            try repository.removeItem(id: newTodo.id)
         }
     }
 
@@ -190,7 +197,7 @@ struct TodoRepositoryTests {
 
         try repository.loadFile(from: URL(fileURLWithPath: "/test.txt"))
 
-        #expect(throws: RepositoryError.invalidLineNumber){
+        #expect(throws: RepositoryError.invalidId){
             try repository.moveItem(from: 10, to: 0)
         }
     }
@@ -202,7 +209,7 @@ struct TodoRepositoryTests {
 
         try repository.loadFile(from: URL(fileURLWithPath: "/test.txt"))
 
-        #expect(throws: RepositoryError.invalidLineNumber){
+        #expect(throws: RepositoryError.invalidId){
             try repository.moveItem(from: 0, to: 10)
         }
     }
