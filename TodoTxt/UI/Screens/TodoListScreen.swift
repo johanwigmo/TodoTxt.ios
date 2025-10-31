@@ -12,7 +12,9 @@ struct TodoListScreen: View {
     @State private var repository: TodoRepository
     @State private var searchText = ""
     @State private var showingFilePicker = false
+    @State private var showingAddSheet = false
     @State private var expandedItemID: UUID?
+    @State private var scrollToItemID: UUID?
 
     @Environment(\.theme) private var theme
 
@@ -24,7 +26,7 @@ struct TodoListScreen: View {
         if repository.currentFileUrl == nil {
             emptyState
         } else {
-            loadedState
+            todoState
         }
     }
 
@@ -36,59 +38,110 @@ struct TodoListScreen: View {
         .background(theme.primaryBackground)
     }
 
-    private var loadedState: some View {
+    private var todoState: some View {
         NavigationStack {
-            List(repository.items, id: \.id) { item in
-                if let header = item as? Header {
-                    HeaderRowView(header: header, onUpdate: { updated in
-                        // TODO: Error handling
-                        if let updated {
-                            try? repository.updateItem(id: updated.id, with: updated)
-                        } else {
-                            try? repository.removeItem(id: header.id)
-                        }
-                    })
-                    .id(header.id)
-                    .listRowInsets(.vertical, Spacing.Semantic.rowInternalSpacing)
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
-                } else if let todo = item as? Todo {
-                    TodoRowView(
-                        todo: todo,
-                        isExpanded: expandedItemID == todo.id,
-                        allProjects: repository.allProjects,
-                        allTags: repository.allTags,
-                        onTap: {
-                            expandedItemID = expandedItemID == todo.id ? nil : todo.id
-                        },
-                        onUpdate: { updated in
-                            // TODO: Error handling
-                            if let updated {
-                                try? repository.updateItem(id: updated.id, with: updated)
-                            } else {
-                                try? repository.removeItem(id: todo.id)
-                            }
-                        })
-                    .id(todo.id)
-                    .listRowInsets(.vertical, Spacing.Semantic.itemSpacing)
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
+            ScrollViewReader { proxy in
+                List(filteredItems, id: \.id) { item in
+                    if let header = item as? Header {
+                        headerRow(header: header)
+                    } else if let todo = item as? Todo {
+                        todoRow(todo: todo)
+                    }
                 }
-            }
-            .listStyle(.plain)
-            .background(theme.primaryBackground)
-            .navigationTitle(L10n.defaultTitle)
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingFilePicker = true
-                    } label: {
-                        Image(systemName: "folder")
+                .listStyle(.plain)
+                .background(theme.primaryBackground)
+                .onChange(of: scrollToItemID) { _, newValue in
+                    if let newValue {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            withAnimation {
+                                expandedItemID = newValue
+                            }
+
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                proxy.scrollTo(newValue, anchor: .center)
+                            }
+                        }
+                    }
+                }
+                .navigationTitle(L10n.defaultTitle)
+                .navigationBarTitleDisplayMode(.large)
+                .toolbar { bottomToolbar() }
+                .searchable(text: $searchText, prompt: Text("Search Todos"))
+                .sheet(isPresented: $showingAddSheet) {
+                    AddItemSheet(
+                        allProjects: repository.allProjects,
+                        allTags: repository.allTags
+                    ) { item in
+                        addItem(item)
                     }
                 }
             }
-            .searchable(text: $searchText, prompt: Text("Search Todos"))
+        }
+    }
+}
+
+private extension TodoListScreen {
+
+    var filteredItems: [any Item] {
+        TodoSearchFilter.filter(items: repository.items, searchText: searchText)
+    }
+
+    func addItem(_ item: any Item) {
+        repository.addItem(item)
+        scrollToItemID = item.id
+    }
+
+    func headerRow(header: Header) -> some View {
+        HeaderRowView(
+            header: header,
+            onUpdate: { updated in
+            // TODO: Error handling
+            if let updated {
+                try? repository.updateItem(id: updated.id, with: updated)
+            } else {
+                try? repository.removeItem(id: header.id)
+            }
+        })
+        .id(header.id)
+        .listRowInsets(.vertical, Spacing.Semantic.rowInternalSpacing)
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
+    }
+
+    func todoRow(todo: Todo) -> some View {
+        TodoRowView(
+            todo: todo,
+            isExpanded: expandedItemID == todo.id,
+            allProjects: repository.allProjects,
+            allTags: repository.allTags,
+            onTap: {
+                expandedItemID = expandedItemID == todo.id ? nil : todo.id
+            },
+            onUpdate: { updated in
+                // TODO: Error handling
+                if let updated {
+                    try? repository.updateItem(id: updated.id, with: updated)
+                } else {
+                    try? repository.removeItem(id: todo.id)
+                }
+            })
+        .id(todo.id)
+        .listRowInsets(.vertical, Spacing.Semantic.itemSpacing)
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
+    }
+
+    @ToolbarContentBuilder
+    func bottomToolbar() -> some ToolbarContent {
+        DefaultToolbarItem(kind: .search, placement: .bottomBar)
+        ToolbarSpacer(.flexible, placement: .bottomBar)
+        ToolbarItemGroup(placement: .bottomBar) {
+            Spacer()
+            Button {
+                showingAddSheet = true
+            } label: {
+                Image(systemName: "plus")
+            }
         }
     }
 }

@@ -7,7 +7,7 @@
 
 class HeaderParser: LineParser {
 
-    func parse(line: String) -> Item? {
+    func parse(line: String) -> (any Item)? {
         let pattern = /^#\s+(.+)$/
 
         guard let match = line.firstMatch(of: pattern) else { return nil }

@@ -17,10 +17,11 @@ enum Spacing {
     static let xxl: CGFloat = 48
 
     enum Semantic {
-        static let itemSpacing: CGFloat = Spacing.s
-        static let sectionSpacin: CGFloat = Spacing.l
-        static let contentPadding: CGFloat = Spacing.m
         static let elementGap: CGFloat = Spacing.xs
+        static let itemSpacing: CGFloat = Spacing.s
+        static let contentPadding: CGFloat = Spacing.m
+        static let sectionSpacin: CGFloat = Spacing.l
+        
         static let rowInternalSpacing: CGFloat = Spacing.xs
     }
 }

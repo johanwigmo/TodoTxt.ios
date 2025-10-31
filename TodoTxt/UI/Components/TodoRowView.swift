@@ -301,7 +301,7 @@ private extension TodoRowView {
 
         if let match = newTitle.firstMatch(of: Pattern.priorityAndTitle) {
             newPriority = TodoPriority(rawValue: String(match.1))
-            newTitle = String(match.2)
+            newTitle = match.2.map(String.init) ?? ""
         }
 
         if newTitle.isEmpty {

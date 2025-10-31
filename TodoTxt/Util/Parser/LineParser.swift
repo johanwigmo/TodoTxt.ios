@@ -6,5 +6,5 @@
 //
 
 protocol LineParser {
-    func parse(line: String) -> Item?
+    func parse(line: String) -> (any Item)?
 }

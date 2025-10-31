@@ -50,10 +50,14 @@ struct HeaderRowView: View {
             let cleaned = editedHeader
                 .replacingOccurrences(of: "#", with: "")
                 .trimmingCharacters(in: .whitespaces)
-            var updated = header
-            updated.title = cleaned
-            onUpdate(updated)
-            editedHeader = "# \(cleaned)"
+            if cleaned.isEmpty {
+                showDeleteAlert = true
+            } else {
+                var updated = header
+                updated.title = cleaned
+                onUpdate(updated)
+                editedHeader = "# \(cleaned)"
+            }
         } else {
             showDeleteAlert = true
         }
