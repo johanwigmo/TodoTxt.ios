@@ -8,6 +8,8 @@
 import SwiftUI
 
 enum Spacing {
+
+    // Base scale
     static let xxs: CGFloat = 4
     static let xs: CGFloat = 8
     static let s: CGFloat = 12
@@ -17,12 +19,10 @@ enum Spacing {
     static let xxl: CGFloat = 48
 
     enum Semantic {
-        static let elementGap: CGFloat = Spacing.xs
-        static let itemSpacing: CGFloat = Spacing.s
-        static let contentPadding: CGFloat = Spacing.m
-        static let sectionSpacin: CGFloat = Spacing.l
-        
-        static let rowInternalSpacing: CGFloat = Spacing.xs
+        static let inlineGap: CGFloat = Spacing.xs
+        static let stackSpacing: CGFloat = Spacing.s
+        static let containerPadding: CGFloat = Spacing.m
+        static let sectionSpacing: CGFloat = Spacing.l
     }
 }
 
@@ -52,6 +52,6 @@ enum Layout {
 extension View {
 
     func contentPadding() -> some View {
-        self.padding(Spacing.Semantic.contentPadding)
+        self.padding(Spacing.Semantic.containerPadding)
     }
 }

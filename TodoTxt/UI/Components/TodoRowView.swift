@@ -18,60 +18,63 @@ struct TodoRowView: View {
 
     @Environment(\.theme) private var theme
 
-    @State private var showDuePicker: Bool = false
+    @State private var editedTitle: String = ""
+    @State private var editedProject: String = ""
+    @State private var editedTag: String = ""
+    @State private var editedNote: String = ""
+    @State private var editedUrl: String = ""
     @State private var editedDue: Date = Date()
 
-    @State private var editedTitle: String = ""
-    @State private var isEditingTitle: Bool = false
-    @FocusState private var titleFieldFocused: Bool
+    @FocusState private var isTitleFocused: Bool
+    @FocusState private var isProjetFocused: Bool
+    @FocusState private var focusedTag: String?
+    @FocusState private var isNoteFocused: Bool
+    @FocusState private var isUrlFocused: Bool
 
-    @State private var editedProject: String = ""
-    @FocusState private var isEditingProject: Bool
-
-    @State private var editedTag: String = ""
-    @FocusState private var focusedTag: String? // nil = none, "" = new tag, or tag name
-
-    @State private var editedNote: String = ""
+    @State private var isTitleEditing: Bool = false
+    @State private var showDuePicker: Bool = false
     @State private var showNoteField: Bool = false
-    @FocusState private var isEditingNote: Bool
-
-    @State private var editedUrl: String = ""
     @State private var showUrlField: Bool = false
-    @FocusState private var isEditingUrl: Bool
-
-
-    @State private var showDeleteAlert: Bool = false
 
     private var isEditing: Bool {
-        isEditingTitle || isEditingProject || focusedTag != nil || isEditingUrl || isEditingNote || showNoteField || showUrlField || showDuePicker
+        isTitleEditing || isProjetFocused || focusedTag != nil ||
+        isUrlFocused || isNoteFocused || showNoteField || showUrlField || showDuePicker
     }
-
-    private static let dateFormatter: DateFormatter = {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        return dateFormatter
-    }()
 
     var body: some View {
         VStack(alignment: .leading) {
-            if todo.due != nil {
-                dueSection()
+            if let due = todo.due {
+                dueDateHeader(due)
             }
 
-            HStack(alignment: .top, spacing: Spacing.Semantic.rowInternalSpacing) {
-                checkbox()
+            HStack(alignment: .top, spacing: Spacing.Semantic.inlineGap) {
+                TodoCheckbox(isCompleted: todo.isCompleted) {
+                    toggleCompletion()
+                }
 
-                VStack(alignment: .leading) {
-                    titleSection()
-                    projectAndTagsSection()
+                VStack(alignment: .leading, spacing: 0) {
+                    TodoTitleEditor(
+                        title: todo.title,
+                        priority: todo.priority,
+                        isCompleted: todo.isCompleted,
+                        editedTitle: $editedTitle,
+                        isEditing: $isTitleEditing,
+                        isFocused: $isTitleFocused,
+                        onSave: saveTitleEdit,
+                        onDelete: { onUpdate(nil) }
+                    )
+                    .onChange(of: isTitleEditing) { _, isEditing in
+                        if isEditing {
+                            let priorityPrefix = todo.priority.map { "(\($0.rawValue)) " } ?? ""
+                            editedTitle = "\(priorityPrefix)\(todo.title)"
+                        }
+                    }
+
+
+                    metadataSection()
 
                     if isExpanded {
-                        noteSection()
-                            .padding(.top, Spacing.Semantic.itemSpacing)
-                        urlSection()
-                            .padding(.top, Spacing.Semantic.rowInternalSpacing)
-                        actionButtonSection()
-                            .padding(.top, Spacing.Semantic.rowInternalSpacing)
+                        expandedContent()
                     }
                 }
             }
@@ -82,221 +85,214 @@ struct TodoRowView: View {
                 onTap()
             }
         }
-        .onAppear() {
-            let priority = todo.priority.map { "(\($0.rawValue)) "} ?? ""
-            editedTitle = "\(priority)\(todo.title)"
-
-            if let project = todo.project {
-                editedProject = "+\(project)"
-            }
-            editedUrl = todo.url ?? ""
-            editedNote = todo.note ?? ""
-        }
-        .onChange(of: titleFieldFocused) { oldValue, newValue in
-            if oldValue && !newValue && isEditingTitle {
-                cancelTitleEdit()
+        .onAppear(perform: initializeState)
+        .onChange(of: isNoteFocused) { _, isFocused in
+            if !isFocused && showNoteField && editedNote.trimmingCharacters(in: .whitespaces).isEmpty {
+                showNoteField = false
             }
         }
-        .onChange(of: isEditingProject) { oldValue, newValue in
-            if oldValue && !newValue {
-                cancelProjectEdit()
-            }
-        }
-        .onChange(of: focusedTag) { oldValue, newValue in
-            if newValue == nil && oldValue != nil {
-                cancelTagEdit()
-            }
-        }
-        .onChange(of: isEditingNote) { oldValue, newValue in
-            if oldValue && !newValue && showNoteField {
-                if editedNote.trimmingCharacters(in: .whitespaces).isEmpty {
-                    showNoteField = false
-                }
-            }
-        }
-        .onChange(of: isEditingUrl) { oldValue, newValue in
-            if oldValue && !newValue && showUrlField {
-                if editedUrl.trimmingCharacters(in: .whitespaces).isEmpty {
-                    showUrlField = false
-                }
+        .onChange(of: isUrlFocused) { _, isFocused in
+            if !isFocused && showUrlField && editedUrl.trimmingCharacters(in: .whitespaces).isEmpty {
+                showUrlField = false
             }
         }
     }
 }
 
-// MARK: Due
-
 private extension TodoRowView {
 
-    @ViewBuilder
-    func dueSection() -> some View {
-        if let due = todo.due {
-            let dueToday = Calendar.current.isDateInToday(due)
+    func dueDateHeader(_ due: Date) -> some View {
+        let dueToday = Calendar.current.isDateInToday(due)
+
+        return VStack(spacing: 0) {
             HStack {
                 Color.clear.frame(width: IconSize.l)
+
                 Button {
                     editedDue = due
                     showDuePicker.toggle()
                 } label: {
-                    Text(Self.dateFormatter.string(from: due) )
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(dueToday ? theme.warning : theme.secondaryText)
+                    Text(due, format: .dateTime.year().month().day())
+                        .monospacedCaption(color: dueToday ? theme.warning : theme.secondaryText)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.plain)
-                .controlSize(.small)
             }
 
             if showDuePicker {
                 Color.clear.frame(width: IconSize.l)
-                dueDatePicker()
+                DueDatePickerView(date: $editedDue, onSave: saveDue, onRemove: removeDue)
             }
         }
     }
 
-    @ViewBuilder
-    func dueDatePicker() -> some View {
-        VStack(alignment: .leading) {
-            DatePicker(
-                "",
-                selection: $editedDue,
-                displayedComponents: [.date]
+    func metadataSection () -> some View {
+        FlowLayout(spacing: Spacing.Semantic.inlineGap) {
+            ProjectField(
+                project: $editedProject,
+                allProjects: allProjects,
+                isFocused: $isProjetFocused
             )
-            .datePickerStyle(.graphical)
-            .labelsHidden()
-            .tint(theme.accentColor)
-
-            HStack {
-                Button(L10n.removeDue) {
-                    isEditingUrl = false
-                    resetDue()
-                }
-                .tint(theme.warning)
-                Spacer()
-                Button(L10n.setDue) {
-                    isEditingUrl = false
-                    saveDue()
-                }
-                .tint(theme.accentColor)
+            .onChange(of: isProjetFocused) { _, isFocused in
+                if !isFocused { saveProject() }
             }
-            .font(.system(.caption, design: .monospaced))
-            .fontWeight(.medium)
-            .foregroundStyle(theme.buttonText)
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
-            .padding(.bottom, Spacing.Semantic.rowInternalSpacing)
+
+            ForEach(todo.tags, id: \.self) { tag in
+                tagField(for: tag)
+            }
+            tagField(for: nil)
         }
-        .frame(maxHeight: .infinity, alignment: .top)
-
+        .padding(.top, Spacing.Semantic.inlineGap)
     }
 
-    func saveDue() {
-        var updated = todo
-        updated.due = editedDue
-        onUpdate(updated)
+    func tagField(for tag: String?) -> some View {
+        let tagId = tag ?? ""
+        let suggestedTag = AutocompleteSuggester.suggest(
+            for: editedTag.replacingOccurrences(of: "@", with: ""),
+            from: allTags,
+            excluding: todo.tags
+        )
 
-        showDuePicker = false
-    }
+        return ZStack(alignment: .leading) {
+            TextField(tag == nil ? L10n.addTag : "@\(tag!)", text: Binding(
+                get: { focusedTag == tagId ? editedTag : (tag.map { "@\($0)" } ?? "") },
+                set: { editedTag = $0 }
+            ))
+            .monospacedCaption(color: theme.tag)
+            .plainTextField()
+            .focused($focusedTag, equals: tagId)
+            .onSubmit {
+                if let suggestedTag, !editedTag.isEmpty {
+                    editedTag = suggestedTag
+                }
+                saveTag(originalTag: tag)
+            }
 
-    func resetDue() {
-        var updated = todo
-        updated.due = nil
-        onUpdate(updated)
+            if focusedTag == tagId, let suggestedTag, !editedTag.isEmpty {
+                let cleanedInput = editedTag
+                    .replacingOccurrences(of: "@", with: "")
+                    .trimmingCharacters(in: .whitespaces)
 
-        showDuePicker = false
-    }
-}
+                if suggestedTag.lowercased().hasPrefix(cleanedInput.lowercased()) {
+                    HStack(spacing: 0) {
+                        Text(editedTag)
+                            .monospacedCaption(color: .clear)
 
-// MARK: Checkbox
-
-private extension TodoRowView {
-
-    func checkbox() -> some View {
-        Button {
-            var updated = todo
-            updated.isCompleted.toggle()
-            updated.completionDate = updated.isCompleted ? Date() : nil
-            onUpdate(updated)
-        } label: {
-            Image(systemName: todo.isCompleted ? "checkmark.square.fill" : "square")
-                .font(.title2)
-                .foregroundStyle(todo.isCompleted ? theme.completed : theme.secondaryText)
-                .frame(width: IconSize.l, height: IconSize.l)
-                .padding(.vertical, -Spacing.xxs)
+                        Text(suggestedTag.dropFirst(cleanedInput.count))
+                            .monospacedCaption(color: theme.tag.opacity(0.4))
+                    }
+                    .allowsHitTesting(false)
+                }
+            }
         }
-        .buttonStyle(.plain)
     }
-}
-
-// MARK: Title
-
-private extension TodoRowView {
 
     @ViewBuilder
-    func titleSection() -> some View {
-        VStack {
-            if isEditingTitle {
-                TextField(L10n.placeholderTitle, text: $editedTitle, axis: .vertical)
-                    .font(.system(.body, design: .monospaced))
-                    .textFieldStyle(.plain)
-                    .foregroundStyle(todo.isCompleted ? theme.secondaryText : theme.primaryText)
-                    .lineLimit(1...)
-                    .focused($titleFieldFocused)
-                    .onSubmit {
-                        saveTitleEdit()
-                    }
-                    .onAppear {
-                        let priority = todo.priority.map { "(\($0.rawValue)) "} ?? ""
-                        editedTitle = "\(priority)\(todo.title)"
+    func expandedContent() -> some View {
+        VStack(alignment: .leading, spacing: Spacing.Semantic.inlineGap) {
+            if todo.note != nil {
+                noteField().padding(.top, Spacing.Semantic.stackSpacing)
+            }
 
-                        titleFieldFocused = true
-                    }
-            } else {
-                Text(styledTitle)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .onTapGesture {
-                        isEditingTitle = true
-                    }
+            if todo.url != nil {
+                urlField().padding(.top, Spacing.Semantic.stackSpacing)
             }
-        }
-        .alert(L10n.deleteItem, isPresented: $showDeleteAlert) {
-            Button(L10n.delete, role: .destructive) {
-                onUpdate(nil)
-                isEditingTitle = false
+
+            if !todo.isCompleted {
+                actionButtons().padding(.top, Spacing.Semantic.stackSpacing)
             }
-            Button(L10n.cancel, role: .cancel) {
-                isEditingTitle = true
-            }
-        } message: {
-            Text(L10n.deleteTodoDescription)
         }
     }
 
-    var styledTitle: AttributedString {
-        var result = AttributedString()
+    func noteField() -> some View {
+        TextField(L10n.addNote, text: $editedNote, axis: .vertical)
+            .monospacedCaption()
+            .plainTextField()
+            .lineLimit(1...)
+            .focused($isNoteFocused)
+            .onSubmit(saveNote)
+            .onAppear {
+                if showNoteField { isNoteFocused = true }
+            }
+    }
 
-        if let priority = todo.priority {
-            var text = AttributedString("(\(priority.rawValue)) ")
-            text.font = .system(.body, design: .monospaced).bold()
-            text.foregroundColor = theme.priority
-            result.append(text)
+    func urlField() -> some View {
+        HStack(spacing: Spacing.Semantic.inlineGap) {
+            TextField(L10n.addUrl, text: $editedUrl)
+                .monospacedCaption()
+                .urlTextField()
+                .focused($isUrlFocused)
+                .onSubmit(saveUrl)
+                .onAppear {
+                    if showUrlField { isUrlFocused = true }
+                }
+
+            if let url = todo.url, !isUrlFocused {
+                Button {
+                    if let url = URL(string: url) {
+                        UIApplication.shared.open(url)
+                    }
+                } label: {
+                    Text(L10n.openUrl)
+                }
+                .actionButton()
+            }
         }
+    }
 
-        var text = AttributedString(todo.title)
-        text.font = .system(.body, design: .monospaced)
-        text.foregroundColor = todo.isCompleted ? theme.secondaryText : theme.primaryText
+    @ViewBuilder
+    func actionButtons() -> some View {
+        VStack(alignment: .leading, spacing: Spacing.Semantic.stackSpacing) {
+            if todo.due == nil && !showDuePicker && !showNoteField && !showUrlField {
+                Button {
+                    editedDue = Date()
+                    showDuePicker = true
+                } label: {
+                    Text(L10n.addDue)
+                }
+                .plainActionButton()
+            }
 
-        if todo.isCompleted {
-            text.strikethroughStyle = .single
+            if todo.note == nil && !showNoteField && !showUrlField && !showDuePicker {
+                Button {
+                    editedNote = ""
+                    showNoteField = true
+                } label: {
+                    Text(L10n.addNote)
+                }
+                .plainActionButton()
+            }
+
+            if todo.url == nil && !showUrlField && !showNoteField && !showDuePicker {
+                Button {
+                    editedUrl = ""
+                    showUrlField = true
+                } label: {
+                    Text(L10n.addUrl)
+                }
+                .plainActionButton()
+            }
         }
+    }
+}
 
-        result.append(text)
+private extension TodoRowView {
 
-        return result
+    func initializeState() {
+        editedProject = todo.project.map { "+\($0)" } ?? ""
+        editedUrl = todo.url ?? ""
+        editedNote = todo.note ?? ""
+    }
+
+    func toggleCompletion(){
+        var updated = todo
+        updated.isCompleted.toggle()
+        updated.completionDate = updated.isCompleted ? Date() : nil
+        onUpdate(updated)
     }
 
     func saveTitleEdit() {
-        var newPriority: TodoPriority? = nil
+        var newPriority: TodoPriority?
         var newTitle = editedTitle.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if let match = newTitle.firstMatch(of: Pattern.priorityAndTitle) {
@@ -304,367 +300,77 @@ private extension TodoRowView {
             newTitle = match.2.map(String.init) ?? ""
         }
 
-        if newTitle.isEmpty {
-            showDeleteAlert = true
-            return
-        }
+        guard !newTitle.isEmpty else { return }
 
         var updated = todo
         updated.title = newTitle
         updated.priority = newPriority
         onUpdate(updated)
-        isEditingTitle = false
-    }
-
-    func cancelTitleEdit() {
-        isEditingTitle = false
-        editedTitle = todo.title
-    }
-}
-
-// MARK: Project & Tags
-
-private extension TodoRowView {
-
-    func projectAndTagsSection() -> some View {
-        FlowLayout(spacing: Spacing.Semantic.elementGap) {
-            projectView()
-
-            ForEach(todo.tags, id: \.self) { tag in
-                tagView(tag: tag)
-            }
-            tagView(tag: nil)
-        }
-    }
-
-    func projectView() -> some View {
-        ZStack(alignment: .leading) {
-            TextField(editedProject == "" ? L10n.addProject : "", text: $editedProject)
-                .font(.system(.caption, design: .monospaced))
-                .foregroundStyle(theme.project)
-                .textFieldStyle(.plain)
-                .onSubmit {
-                    if isEditingProject, let suggestedProject, !editedProject.isEmpty {
-                        let searchTerm = editedProject
-                            .replacingOccurrences(of: "+", with: "")
-                            .trimmingCharacters(in: .whitespaces)
-
-                        if suggestedProject.lowercased().hasPrefix(searchTerm.lowercased()) {
-                            editedProject = suggestedProject
-                        }
-                    }
-
-                    saveProject()
-                    isEditingTitle = false
-                }
-                .focused($isEditingProject)
-                .autocorrectionDisabled()
-
-            if isEditingProject, let suggestedProject, !editedProject.isEmpty {
-                let searchTerm = editedProject
-                    .replacingOccurrences(of: "+", with: "")
-                    .trimmingCharacters(in: .whitespaces)
-
-                if suggestedProject.lowercased().hasPrefix(searchTerm.lowercased()) {
-                    HStack(spacing: 0) {
-                        Text(editedProject)
-                            .font(.system(.caption, design: .monospaced))
-                            .foregroundStyle(.clear) // Hiden to align with TextField
-                        Text(suggestedProject.dropFirst(searchTerm.count))
-                            .font(.system(.caption, design: .monospaced))
-                            .foregroundStyle(theme.project.opacity(0.4))
-                    }
-                    .allowsHitTesting(false)
-                }
-            }
-        }
+        isTitleFocused = false
     }
 
     func saveProject() {
-        var newProject: String?
-        if !editedProject.isEmpty {
-            newProject = editedProject
-                .replacingOccurrences(of: "+", with: "")
-                .trimmingCharacters(in: .whitespaces)
-        } else {
-            newProject = nil
-        }
-
-        var updated = todo
-        updated.project = newProject
-        onUpdate(updated)
-    }
-
-    func cancelProjectEdit() {
-        isEditingProject = false
-        if let project = todo.project {
-            editedProject = "+\(project)"
-        } else {
-            editedProject = ""
-        }
-    }
-
-    var suggestedProject: String? {
-        let searchTerm = editedProject
+        let cleaned = editedProject
             .replacingOccurrences(of: "+", with: "")
             .trimmingCharacters(in: .whitespaces)
 
-        guard !searchTerm.isEmpty else { return allProjects.first }
-        return allProjects.first { $0.localizedCaseInsensitiveContains(searchTerm) }
-    }
-
-    func tagView(tag: String?) -> some View {
-        let tagId = tag ?? ""
-
-        return ZStack(alignment: .leading) {
-            TextField(tag == nil ? L10n.addTag : "@\(tag!)", text: Binding(
-                get: {
-                    focusedTag == tagId ? editedTag : (tag.map { "@\($0)" } ?? "")
-                },
-                set: { editedTag = $0 }
-            ))
-            .font(.system(.caption, design: .monospaced))
-            .foregroundStyle(theme.tag)
-            .textFieldStyle(.plain)
-            .onSubmit {
-                if focusedTag == tagId, let suggestedTag, !editedTag.isEmpty {
-                    let searchTerm = editedTag
-                        .replacingOccurrences(of: "@", with: "")
-                        .trimmingCharacters(in: .whitespaces)
-
-                    if suggestedTag.lowercased().hasPrefix(searchTerm.lowercased()) {
-                        editedTag = suggestedTag
-                    }
-                }
-
-                saveTag(originalTag: tag)
-                focusedTag = nil
-            }
-            .focused($focusedTag, equals: tagId)
-            .autocorrectionDisabled()
-
-            if focusedTag == tagId, let suggestedTag, !editedTag.isEmpty {
-                let searchTerm = editedTag
-                    .replacingOccurrences(of: "@", with: "")
-                    .trimmingCharacters(in: .whitespaces)
-
-                if suggestedTag.lowercased().hasPrefix(searchTerm.lowercased()) {
-                    HStack(spacing: 0) {
-                        Text(editedTag)
-                            .font(.system(.caption, design: .monospaced))
-                            .foregroundStyle(.clear)
-                        Text(suggestedTag.dropFirst(searchTerm.count))
-                            .font(.system(.caption, design: .monospaced))
-                            .foregroundStyle(theme.tag.opacity(0.4))
-                    }
-                    .allowsHitTesting(false)
-                }
-            }
-        }
+        var updated = todo
+        updated.project = cleaned.isEmpty ? nil : cleaned
+        onUpdate(updated)
     }
 
     func saveTag(originalTag: String?) {
-        let cleanedTag = editedTag
+        let cleaned = editedTag
             .replacingOccurrences(of: "@", with: "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
         var updated = todo
 
-        if let orignalTag = originalTag {
-            if cleanedTag.isEmpty { // Remove tag
-                updated.tags.removeAll { $0 == originalTag }
-            } else if cleanedTag != orignalTag,
-                        let originalTag,
-                        let index = updated.tags.firstIndex(of: originalTag) { // Replace tag
-                updated.tags[index] = cleanedTag
+        if let originalTag {
+            if cleaned.isEmpty {
+                updated.tags.removeAll { $0 == originalTag}
+            } else if cleaned != originalTag, let index = updated.tags.firstIndex(of: originalTag) {
+                updated.tags[index] = cleaned
             }
-        } else if !cleanedTag.isEmpty && !updated.tags.contains(cleanedTag) { // New tag
-            updated.tags.append(cleanedTag)
+        } else if !cleaned.isEmpty && !updated.tags.contains(cleaned) {
+            updated.tags.append(cleaned)
         }
 
         onUpdate(updated)
         editedTag = ""
+        focusedTag = nil
     }
 
-    func cancelTagEdit() {
-        editedTag = ""
+    func saveDue() {
+        var updated = todo
+        updated.due = editedDue
+        onUpdate(updated)
+        showDuePicker = false
     }
 
-    var suggestedTag: String? {
-        let searchTerm = editedTag
-            .replacingOccurrences(of: "@", with: "")
-            .trimmingCharacters(in: .whitespaces)
-
-        guard !searchTerm.isEmpty else { return allTags.first }
-        return allTags
-            .filter { !todo.tags.contains($0) }
-            .first { $0.localizedCaseInsensitiveContains(searchTerm) }
-    }
-}
-
-// MARK: Note
-
-private extension TodoRowView {
-
-    @ViewBuilder
-    func noteSection() -> some View {
-        if todo.note != nil {
-            noteTextField()
-        }
+    func removeDue() {
+        var updated = todo
+        updated.due = nil
+        onUpdate(updated)
+        showDuePicker = false
     }
 
-    @ViewBuilder
-    func noteTextField() -> some View{
-        TextField(L10n.addNote, text: $editedNote, axis: .vertical)
-            .font(.system(.caption, design: .monospaced))
-            .textFieldStyle(.plain)
-            .foregroundStyle(theme.secondaryText)
-            .lineLimit(1...)
-            .onSubmit {
-                saveNote()
-            }
-            .focused($isEditingNote)
-            .onAppear {
-                if showNoteField {
-                    isEditingNote = true
-                }
-            }
-    }
-
-    func saveNote() {
-        isEditingNote = false
+    func saveNote(){
         let cleaned = editedNote.trimmingCharacters(in: .whitespaces)
-
         var updated = todo
         updated.note = cleaned.isEmpty ? nil : cleaned
         onUpdate(updated)
-
+        isNoteFocused = false
         showNoteField = false
-    }
-}
-
-// MARK: Url
-
-private extension TodoRowView {
-
-    @ViewBuilder
-    func urlSection() -> some View {
-        if todo.url != nil {
-            urlTextField()
-        }
-    }
-
-    @ViewBuilder
-    func urlTextField() -> some View {
-        HStack(spacing: Spacing.Semantic.elementGap) {
-            TextField(L10n.addUrl, text: $editedUrl)
-                .font(.system(.caption, design: .monospaced))
-                .textFieldStyle(.plain)
-                .foregroundStyle(theme.secondaryText)
-                .onSubmit {
-                    saveUrl()
-                }
-                .focused($isEditingUrl)
-                .onAppear {
-                    if showUrlField {
-                        isEditingUrl = true
-                    }
-                }
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-
-            if let url = todo.url, !isEditingUrl {
-                Button {
-                    if let url = URL(string: url) {
-                        UIApplication.shared.open(url)
-                    }
-                } label: {
-                    Text(L10n.openUrl)
-                        .font(.system(.caption, design: .monospaced))
-                        .fontWeight(.medium)
-                        .foregroundStyle(theme.buttonText)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(theme.accentColor)
-                .controlSize(.small)
-            }
-
-        }
     }
 
     func saveUrl() {
-        isEditingUrl = false
         let cleaned = editedUrl.trimmingCharacters(in: .whitespaces)
-
         var updated = todo
         updated.url = cleaned.isEmpty ? nil : cleaned
         onUpdate(updated)
-
+        isUrlFocused = false
         showUrlField = false
-    }
-}
-
-// MARK: Action Buttons
-
-private extension TodoRowView {
-
-    @ViewBuilder
-    func actionButtonSection() -> some View {
-        if !todo.isCompleted {
-            VStack(alignment: .leading, spacing: Spacing.Semantic.contentPadding) {
-
-                if todo.due == nil {
-                    if showDuePicker {
-                        dueDatePicker()
-                    } else if !showNoteField && !showUrlField {
-                        Button {
-                            editedDue = Date()
-                            showDuePicker = true
-                        } label: {
-                            Text(L10n.addDue)
-                                .font(.system(.caption, design: .monospaced))
-                                .foregroundStyle(theme.accentColor)
-                        }
-                        .buttonStyle(.plain)
-                        .controlSize(.small)
-                    }
-                }
-
-                if todo.note == nil {
-                    if showNoteField {
-                        noteTextField()
-                    } else if !showUrlField && !showDuePicker {
-                        Button {
-                            editedNote = ""
-                            showNoteField = true
-                        } label: {
-                            Text(L10n.addNote)
-                                .font(.system(.caption, design: .monospaced))
-                                .foregroundStyle(theme.accentColor)
-                        }
-                        .buttonStyle(.plain)
-                        .controlSize(.small)
-                    }
-                }
-
-                if todo.url == nil {
-                    if showUrlField {
-                        urlTextField()
-                    } else if !showNoteField && !showDuePicker {
-                        Button {
-                            editedUrl = ""
-                            showUrlField = true
-                        } label: {
-                            Text(L10n.addUrl)
-                                .font(.system(.caption, design: .monospaced))
-                                .foregroundStyle(theme.accentColor)
-                        }
-                        .buttonStyle(.plain)
-                        .controlSize(.small)
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -684,7 +390,7 @@ private extension TodoRowView {
 #Preview("Expanded") {
     TodoRowView(
         todo: Todo(
-            title: "Review budget, and send proposal to everyone",
+            title: "Review budget",
             priority: .A,
             project: "Work",
             tags: ["urgent", "finance"],
@@ -693,12 +399,11 @@ private extension TodoRowView {
             note: "Check with Joe first"
         ),
         isExpanded: true,
-        allProjects: [],
-        allTags: [],
+        allProjects: ["Work", "Home"],
+        allTags: ["urgent", "finance", "meeting"],
         onTap: {},
-        onUpdate:  { _ in }
+        onUpdate: { _ in }
     )
     .padding()
     .previewBackground()
-    .preferredColorScheme(.dark)
 }

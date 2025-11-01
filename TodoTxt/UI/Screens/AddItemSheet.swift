@@ -45,8 +45,8 @@ struct AddItemSheet: View {
                 titleSection()
 
                 if selectedType == .todo {
-                    todoDetailsSection()
-                    todoNoteSection()
+                    detailsSection()
+                    noteSection()
                 }
             }
             .scrollContentBackground(.hidden)
@@ -55,16 +55,12 @@ struct AddItemSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(L10n.cancel) {
-                        dismiss()
-                    }
+                    Button(L10n.cancel) { dismiss() }
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(L10n.add) {
-                        addItem()
-                    }
-                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    Button(L10n.add, action: addItem)
+                        .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
             .onAppear {
@@ -79,26 +75,18 @@ private extension AddItemSheet {
 
     func typeSection() -> some View {
         Section {
-            HStack(spacing: Spacing.Semantic.itemSpacing) {
+            HStack(spacing: Spacing.Semantic.stackSpacing) {
                 TypeSelectorButton(
                     type: .todo,
                     isSelected: selectedType == .todo,
-                    colors: TypeSelectorButton.Colors(
-                        accent: theme.accentColor,
-                        active: theme.buttonText,
-                        inactive: theme.primaryText
-                    ),
+                    colors: buttonColors,
                     action: { selectedType = .todo }
                 )
 
                 TypeSelectorButton(
                     type: .header,
                     isSelected: selectedType == .header,
-                    colors: TypeSelectorButton.Colors(
-                        accent: theme.accentColor,
-                        active: theme.buttonText,
-                        inactive: theme.primaryText
-                    ),
+                    colors: buttonColors,
                     action: { selectedType = .header }
                 )
             }
@@ -113,38 +101,63 @@ private extension AddItemSheet {
                 .foregroundStyle(theme.primaryText)
                 .focused($isTitleFocused)
                 .onChange(of: title) { _, newValue in
-                    let result = TodoTextParser.extractPriority(from: newValue)
-                    priority = result.priority
+                    priority = TodoTextParser.extractPriority(from: newValue).priority
                 }
 
             if let detectedPriority = priority, selectedType == .todo {
-                HStack {
-                    Text("\(L10n.priority): \(detectedPriority.rawValue)")
-                        .font(.caption)
-                        .foregroundStyle(theme.secondaryText)
-                    Spacer()
-                    Button(L10n.clear) {
-                        priority = nil
-                    }
-                    .font(.caption)
-                }
+                priorityIndicator(detectedPriority)
             }
         }
         .listRowBackground(theme.noteBackground)
     }
 
-    func todoDetailsSection() -> some View {
+    func priorityIndicator(_ priority: TodoPriority) -> some View {
+        HStack {
+            Text("\(L10n.priority): \(priority.rawValue)")
+                .font(.caption)
+                .foregroundStyle(theme.secondaryText)
 
+            Spacer()
+
+            Button(L10n.clear) {
+                self.priority = nil
+            }
+            .font(.caption)
+        }
+    }
+
+    func detailsSection() -> some View {
         Section(L10n.details) {
-            projectView()
-            tagsView()
-            dueDateView()
-            urlView()
+            ProjectField(
+                project: $project,
+                allProjects: allProjects,
+                isFocused: $isProjectFocused,
+                font: .body,
+                color: theme.primaryText
+            )
+            TagChipList(tags: $tags, inputTag: $tag, allTags: allTags, isFocused: $isTagFocused)
+
+            Toggle(L10n.placeholderDueDate, isOn: $showDueDatePicker)
+            if showDueDatePicker {
+                DatePicker(
+                    "",
+                    selection: Binding(
+                        get: { dueDate ?? Date() },
+                        set: { dueDate = $0 }
+                    ),
+                    displayedComponents: [.date]
+                )
+                .datePickerStyle(.graphical)
+            }
+
+            TextField(L10n.addUrl, text: $url)
+                .focused($isUrlFocused)
+                .urlTextField()
         }
         .listRowBackground(theme.noteBackground)
     }
 
-    func todoNoteSection() -> some View {
+    func noteSection() -> some View {
         Section(L10n.note) {
             TextField(L10n.placeholderNote, text: $note, axis: .vertical)
                 .foregroundStyle(theme.primaryText)
@@ -154,124 +167,12 @@ private extension AddItemSheet {
         .listRowBackground(theme.noteBackground)
     }
 
-    func projectView() -> some View {
-        ZStack(alignment: .leading) {
-            TextField(L10n.placeholderProject, text: $project)
-                .foregroundStyle(theme.primaryText)
-                .focused($isProjectFocused)
-                .autocorrectionDisabled()
-                .onSubmit {
-                    if let suggestedProject {
-                        let completion = AutocompleteSuggester.completionText(for: project, suggestion: suggestedProject)
-                        if !completion.isEmpty {
-                            project = suggestedProject
-                        }
-                    }
-                    isProjectFocused = false
-                }
-
-            if isProjectFocused, let suggestedProject, !project.isEmpty {
-                let completion = AutocompleteSuggester.completionText(for: project, suggestion: suggestedProject)
-                if !completion.isEmpty {
-                    HStack(spacing: 0) {
-                        Text(project).foregroundStyle(.clear)
-                        Text(completion).foregroundStyle(theme.secondaryText)
-                    }
-                    .allowsHitTesting(false)
-                }
-
-            }
-        }
-    }
-
-    func tagsView() -> some View {
-        VStack(alignment: .leading, spacing: Spacing.Semantic.elementGap) {
-            FlowLayout(spacing: Spacing.Semantic.elementGap) {
-                ForEach(tags, id: \.self) { tag in
-                    Button {
-                        tags.removeAll() { $0 == tag }
-                    } label: {
-                        HStack(spacing: Spacing.xxs) {
-                            Text(tag).foregroundStyle(theme.primaryText)
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.caption)
-                                .foregroundStyle(theme.warning)
-                        }
-                    }
-                }
-
-                ZStack(alignment: .leading) {
-                    TextField(L10n.placeholderTags, text: $tag)
-                        .foregroundStyle(theme.primaryText)
-                        .focused($isTagFocused)
-                        .autocorrectionDisabled()
-                        .onSubmit {
-                            submitTag()
-                        }
-
-                    if isTagFocused, let suggestedTag, !tag.isEmpty {
-                        let completion = AutocompleteSuggester.completionText(for: tag, suggestion: suggestedTag)
-                        if !completion.isEmpty {
-                            HStack(spacing: 0) {
-                                Text(tag).foregroundStyle(.clear)
-                                Text(completion).foregroundStyle(theme.secondaryText)
-                            }
-                            .allowsHitTesting(false)
-                        }
-
-                    }
-
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    func dueDateView() -> some View {
-        Toggle(L10n.placeholderDueDate, isOn: $showDueDatePicker)
-
-        if showDueDatePicker {
-            DatePicker("", selection: Binding(
-                get: { dueDate ?? Date() },
-                set: { dueDate = $0 }
-            ), displayedComponents: .date)
-            .datePickerStyle(.graphical)
-        }
-    }
-
-    func urlView() -> some View {
-        TextField(L10n.addUrl, text: $url)
-            .focused($isUrlFocused)
-            .keyboardType(.URL)
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled()
+    var buttonColors: TypeSelectorButton.Colors {
+        TypeSelectorButton.Colors(accent: theme.accentColor, active: theme.buttonText, inactive: theme.primaryText)
     }
 }
 
 extension AddItemSheet {
-
-    var suggestedProject: String? {
-        AutocompleteSuggester.suggest(for: project, from: allProjects)
-    }
-
-    var suggestedTag: String? {
-        AutocompleteSuggester.suggest(for: tag, from: allTags, excluding: tags)
-    }
-
-    func submitTag() {
-        let cleaned = tag.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if let suggestedTag {
-            let completion = AutocompleteSuggester.completionText(for: cleaned, suggestion: suggestedTag)
-            if !completion.isEmpty && !tags.contains(suggestedTag) {
-                tags.append(suggestedTag)
-            }
-        } else if !cleaned.isEmpty && !tags.contains(cleaned) {
-            tags.append(cleaned)
-        }
-
-        tag = ""
-    }
 
     func addItem() {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -281,9 +182,9 @@ extension AddItemSheet {
         switch selectedType {
         case .header:
             item = Header(title: trimmedTitle)
+
         case .todo:
             let finalTitle = TodoTextParser.removePriorityPrefix(from: trimmedTitle)
-
             item = Todo(
                 title: finalTitle,
                 isCompleted: false,
@@ -302,7 +203,7 @@ extension AddItemSheet {
     }
 }
 
-// compiler didn't like `.buttonStyle(ifSelected ? .borderedProminent : .bordered)`
+// compiler doesn't like `.buttonStyle(ifSelected ? .borderedProminent : .bordered)`
 private struct TypeSelectorButton: View {
 
     struct Colors {
@@ -310,7 +211,6 @@ private struct TypeSelectorButton: View {
         let active: Color
         let inactive: Color
     }
-
 
     let type: ItemType
     let isSelected: Bool
@@ -326,7 +226,7 @@ private struct TypeSelectorButton: View {
                     .foregroundStyle(colors.active)
                     .fontWeight(.semibold)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, Spacing.Semantic.itemSpacing)
+                    .padding(.vertical, Spacing.Semantic.stackSpacing)
             }
             .buttonStyle(.borderedProminent)
             .buttonBorderShape(.roundedRectangle)
@@ -338,7 +238,7 @@ private struct TypeSelectorButton: View {
                     .foregroundStyle(colors.inactive)
                     .fontWeight(.semibold)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, Spacing.Semantic.itemSpacing)
+                    .padding(.vertical, Spacing.Semantic.stackSpacing)
             }
             .buttonStyle(.bordered)
             .buttonBorderShape(.roundedRectangle)

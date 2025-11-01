@@ -42,7 +42,7 @@ enum L10n {
 
 
     // MARK: Placeholders
-    static let placeholderSearch = String(localized: "Search")
+    static let placeholderSearch = String(localized: "Search todos")
     static let placeholderTitle = String(localized: "Add title")
     static let placeHolderHeader = String(localized: "Add header")
     static let placeholderProject = String(localized: "Add project")

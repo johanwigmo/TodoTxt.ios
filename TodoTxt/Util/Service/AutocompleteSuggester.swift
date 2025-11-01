@@ -19,7 +19,7 @@ struct AutocompleteSuggester {
 
         return allOptions
             .filter { !excludeOptions.contains($0) }
-            .first { $0.localizedCaseInsensitiveContains(cleaned) }
+            .first { $0.localizedCaseInsensitiveContains(searchTerm) }
     }
 
     static func completionText(for searchTerm: String, suggestion: String) -> String {

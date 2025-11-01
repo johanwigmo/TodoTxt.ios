@@ -9,7 +9,7 @@ import SwiftUI
 
 struct FlowLayout: SwiftUI.Layout {
 
-    var spacing = Spacing.Semantic.elementGap
+    var spacing = Spacing.Semantic.inlineGap
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let result = FlowResult(

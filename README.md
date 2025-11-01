@@ -10,7 +10,7 @@ Parsing [todo.txt](http://todotxt.org/) text files for visualization and interac
 - [/] File management, fetch and update
 - [x] Edit Header
 - [x] Edit Todo
-- [ ] Search
+- [x] Search
 - [ ] iCloud sync
 - [ ] Backup file content
 

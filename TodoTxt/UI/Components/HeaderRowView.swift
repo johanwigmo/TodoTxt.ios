@@ -24,7 +24,7 @@ struct HeaderRowView: View {
             .fontWeight(.semibold)
             .foregroundStyle(theme.heading)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, Spacing.Semantic.itemSpacing)
+            .padding(.top, Spacing.Semantic.stackSpacing)
             .focused($focusTextField)
             .id(header.id)
             .onSubmit {

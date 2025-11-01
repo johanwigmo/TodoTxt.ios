@@ -52,28 +52,19 @@ struct TodoListScreen: View {
                 .background(theme.primaryBackground)
                 .onChange(of: scrollToItemID) { _, newValue in
                     if let newValue {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            withAnimation {
-                                expandedItemID = newValue
-                            }
-
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                proxy.scrollTo(newValue, anchor: .center)
-                            }
-                        }
+                        handleScrollToItem(newValue, proxy: proxy)
                     }
                 }
                 .navigationTitle(L10n.defaultTitle)
                 .navigationBarTitleDisplayMode(.large)
                 .toolbar { bottomToolbar() }
-                .searchable(text: $searchText, prompt: Text("Search Todos"))
+                .searchable(text: $searchText, prompt: Text(L10n.placeholderSearch))
                 .sheet(isPresented: $showingAddSheet) {
                     AddItemSheet(
                         allProjects: repository.allProjects,
-                        allTags: repository.allTags
-                    ) { item in
-                        addItem(item)
-                    }
+                        allTags: repository.allTags,
+                        onAdd: addItem
+                    )
                 }
             }
         }
@@ -84,11 +75,6 @@ private extension TodoListScreen {
 
     var filteredItems: [any Item] {
         TodoSearchFilter.filter(items: repository.items, searchText: searchText)
-    }
-
-    func addItem(_ item: any Item) {
-        repository.addItem(item)
-        scrollToItemID = item.id
     }
 
     func headerRow(header: Header) -> some View {
@@ -103,7 +89,7 @@ private extension TodoListScreen {
             }
         })
         .id(header.id)
-        .listRowInsets(.vertical, Spacing.Semantic.rowInternalSpacing)
+        .listRowInsets(.vertical, Spacing.Semantic.inlineGap)
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
     }
@@ -126,7 +112,7 @@ private extension TodoListScreen {
                 }
             })
         .id(todo.id)
-        .listRowInsets(.vertical, Spacing.Semantic.itemSpacing)
+        .listRowInsets(.vertical, Spacing.Semantic.stackSpacing)
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
     }
@@ -141,6 +127,28 @@ private extension TodoListScreen {
                 showingAddSheet = true
             } label: {
                 Image(systemName: "plus")
+            }
+        }
+    }
+}
+
+private extension TodoListScreen {
+
+    func addItem(_ item: any Item) {
+        repository.addItem(item)
+        scrollToItemID = item.id
+    }
+
+    func handleScrollToItem(_ itemID: UUID?, proxy: ScrollViewProxy){
+        guard let itemID else { return }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation {
+                expandedItemID = itemID
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                proxy.scrollTo(itemID, anchor: .center)
             }
         }
     }
