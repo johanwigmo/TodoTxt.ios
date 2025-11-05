@@ -32,8 +32,7 @@ struct TodoTitleEditor: View {
                     .focused($isFocused)
                     .onSubmit(handleSave)
                     .onAppear {
-                        let priorityPrefix = priority.map { "(\($0.rawValue)) " } ?? ""
-                        editedTitle = "\(priorityPrefix)\(title)"
+                        editedTitle = priorityAndTitleCombined
                         isFocused = true
                     }
             } else {
@@ -47,11 +46,17 @@ struct TodoTitleEditor: View {
         .alert(L10n.deleteItem, isPresented: $showDeleteAlert) {
             Button(L10n.delete, role: .destructive, action: onDelete)
             Button(L10n.cancel, role: .cancel) {
+                editedTitle = priorityAndTitleCombined
                 isFocused = true
             }
         } message: {
             Text(L10n.deleteTodoDescription)
         }
+    }
+
+    private var priorityAndTitleCombined: String {
+        let priorityPrefix = priority.map { "(\($0.rawValue)) " } ?? ""
+        return "\(priorityPrefix)\(title)"
     }
 
     private var styledTitle: AttributedString {

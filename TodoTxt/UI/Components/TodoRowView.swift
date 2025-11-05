@@ -70,7 +70,6 @@ struct TodoRowView: View {
                         }
                     }
 
-
                     metadataSection()
 
                     if isExpanded {
@@ -101,29 +100,32 @@ struct TodoRowView: View {
 
 private extension TodoRowView {
 
+    @ViewBuilder
     func dueDateHeader(_ due: Date) -> some View {
-        let dueToday = Calendar.current.isDateInToday(due)
-
-        return VStack(spacing: 0) {
-            HStack {
-                Color.clear.frame(width: IconSize.l)
-
-                Button {
-                    editedDue = due
-                    showDuePicker.toggle()
-                } label: {
-                    Text(due, format: .dateTime.year().month().day())
-                        .monospacedCaption(color: dueToday ? theme.warning : theme.secondaryText)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .buttonStyle(.plain)
-            }
-
+        VStack(spacing: 0) {
             if showDuePicker {
-                Color.clear.frame(width: IconSize.l)
-                DueDatePickerView(date: $editedDue, onSave: saveDue, onRemove: removeDue)
+                HStack {
+                    Color.clear.frame(width: IconSize.l)
+                    DueDatePickerView(date: $editedDue, onSave: saveDue, onRemove: removeDue)
+                }
+            } else {
+                let dueToday = Calendar.current.compare(due, to: Date(), toGranularity: .day) != .orderedDescending
+                HStack {
+                    Color.clear.frame(width: IconSize.l)
+
+                    Button {
+                        editedDue = due
+                        showDuePicker.toggle()
+                    } label: {
+                        Text(due, format: .dateTime.year().month().day())
+                            .monospacedCaption(color: dueToday ? theme.warning : theme.secondaryText)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
         }
+        .frame(maxHeight: .infinity, alignment: .top)
     }
 
     func metadataSection () -> some View {
@@ -190,12 +192,16 @@ private extension TodoRowView {
     @ViewBuilder
     func expandedContent() -> some View {
         VStack(alignment: .leading, spacing: Spacing.Semantic.inlineGap) {
-            if todo.note != nil {
+            if todo.note != nil || showNoteField {
                 noteField().padding(.top, Spacing.Semantic.stackSpacing)
             }
 
-            if todo.url != nil {
+            if todo.url != nil || showUrlField {
                 urlField().padding(.top, Spacing.Semantic.stackSpacing)
+            }
+
+            if todo.due == nil && showDuePicker {
+                DueDatePickerView(date: $editedDue, onSave: saveDue, onRemove: removeDue)
             }
 
             if !todo.isCompleted {
@@ -243,34 +249,36 @@ private extension TodoRowView {
     @ViewBuilder
     func actionButtons() -> some View {
         VStack(alignment: .leading, spacing: Spacing.Semantic.stackSpacing) {
-            if todo.due == nil && !showDuePicker && !showNoteField && !showUrlField {
-                Button {
-                    editedDue = Date()
-                    showDuePicker = true
-                } label: {
-                    Text(L10n.addDue)
+            if !showDuePicker && !showNoteField && !showUrlField {
+                if todo.due == nil {
+                    Button {
+                        editedDue = Date()
+                        showDuePicker = true
+                    } label: {
+                        Text(L10n.addDue)
+                    }
+                    .plainActionButton()
                 }
-                .plainActionButton()
-            }
 
-            if todo.note == nil && !showNoteField && !showUrlField && !showDuePicker {
-                Button {
-                    editedNote = ""
-                    showNoteField = true
-                } label: {
-                    Text(L10n.addNote)
+                if todo.note == nil {
+                    Button {
+                        editedNote = ""
+                        showNoteField = true
+                    } label: {
+                        Text(L10n.addNote)
+                    }
+                    .plainActionButton()
                 }
-                .plainActionButton()
-            }
 
-            if todo.url == nil && !showUrlField && !showNoteField && !showDuePicker {
-                Button {
-                    editedUrl = ""
-                    showUrlField = true
-                } label: {
-                    Text(L10n.addUrl)
+                if todo.url == nil {
+                    Button {
+                        editedUrl = ""
+                        showUrlField = true
+                    } label: {
+                        Text(L10n.addUrl)
+                    }
+                    .plainActionButton()
                 }
-                .plainActionButton()
             }
         }
     }
@@ -306,6 +314,7 @@ private extension TodoRowView {
         updated.title = newTitle
         updated.priority = newPriority
         onUpdate(updated)
+        isTitleEditing = false
         isTitleFocused = false
     }
 
@@ -332,7 +341,7 @@ private extension TodoRowView {
             } else if cleaned != originalTag, let index = updated.tags.firstIndex(of: originalTag) {
                 updated.tags[index] = cleaned
             }
-        } else if !cleaned.isEmpty && !updated.tags.contains(cleaned) {
+        } else if !cleaned.isEmpty && !updated.tags.contains(where: { $0.caseInsensitiveCompare(cleaned) == .orderedSame }) {
             updated.tags.append(cleaned)
         }
 

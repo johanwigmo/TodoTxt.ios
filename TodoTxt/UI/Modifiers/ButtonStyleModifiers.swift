@@ -39,10 +39,8 @@ struct DestructiveButtonStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .font(.system(.caption, design: .monospaced))
-            .fontWeight(.medium)
-            .foregroundStyle(theme.buttonText)
-            .buttonStyle(.borderedProminent)
-            .tint(theme.warning)
+            .foregroundStyle(theme.warning)
+            .buttonStyle(.plain)
             .controlSize(.small)
     }
 }
